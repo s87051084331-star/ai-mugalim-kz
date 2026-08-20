@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="kk">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Мұғалім көмекшісі</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#172033;--muted:#667085;--line:#e4e7ec;--accent:#2563eb;--good:#15803d;--warn:#b45309}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{padding:20px 28px;background:#111827;color:#fff;display:flex;justify-content:space-between;align-items:center}
+header h1{margin:0;font-size:22px}.wrap{max-width:1400px;margin:22px auto;padding:0 18px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.tab{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;background:#e9eef7}.tab.active{background:var(--accent);color:#fff}
+.panel{display:none}.panel.active{display:block}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 5px 18px #1018280a;margin-bottom:16px}
+h2,h3{margin-top:0}.drop{border:2px dashed #98a2b3;border-radius:14px;padding:28px;text-align:center;background:#fafcff}
+button,.btn{border:0;border-radius:9px;padding:10px 14px;cursor:pointer;background:var(--accent);color:#fff;font-weight:700}.secondary{background:#475467}.good{background:var(--good)}
+input,textarea,select{width:100%;padding:10px;border:1px solid #d0d5dd;border-radius:9px;margin:6px 0 12px;background:#fff}textarea{min-height:100px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left}th{background:#f8fafc;position:sticky;top:0}
+.badge{padding:4px 8px;border-radius:999px;background:#eef4ff;color:#3538cd;font-size:12px}.student-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.student{padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer}.student:hover{border-color:#84adff}.student b{display:block}.muted{color:var(--muted);font-size:13px}
+.score{font-size:36px;font-weight:800}.progress{height:8px;background:#eaecf0;border-radius:10px;overflow:hidden}.progress i{display:block;height:100%;background:#2563eb}
+video{width:100%;border-radius:12px;background:#111;min-height:220px}.notice{background:#fffaeb;border:1px solid #fedf89;padding:12px;border-radius:10px;font-size:13px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.student-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+.att-row{display:grid;grid-template-columns:55px 1fr 90px 100px 120px;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #e4e7ec}
+.present{color:#15803d;font-weight:700}.absent{color:#b42318;font-weight:700}
+#reader{max-width:520px;margin:auto}.qrbox{text-align:center}.qrbox canvas{max-width:220px!important}
+</style>
+</head>
+<body>
+<header><h1>🎓 AI Мұғалім көмекшісі</h1><span>Сынып • ҚМЖ • Аудио • Бағалау <b style="background:#2563eb;padding:5px 9px;border-radius:8px;margin-left:8px">v3 • XLSX/CSV • 8085</b></span></header>
+<div class="wrap">
+<div class="tabs">
+<button class="tab active" data-p="qmj">ҚМЖ</button><button class="tab" data-p="students">Сыныпты басқару</button>
+<button class="tab" data-p="answer">Жауапты талдау</button><button class="tab" data-p="camera">Қатысу</button><button class="tab" data-p="journal">Журнал</button>
+</div>
+
+<section id="qmj" class="panel active">
+<div class="grid"><div class="card"><h2>ҚМЖ / сабақ материалын жүктеу</h2>
+<div class="drop"><input id="qmjFile" type="file" accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv,.jpg,.jpeg,.png"><p>PDF, DOCX, XLSX, PPTX, TXT, CSV, JPG/PNG</p><button onclick="uploadQMJ()">Жүктеу және оқу</button></div>
+<p id="fileStatus" class="muted">Файл таңдалмаған.</p></div>
+<div class="card"><h2>Сабақ құрылымы</h2><label>Пән</label><input id="subject" value="Математика"><label>Тақырып</label><input id="topic" placeholder="Сабақ тақырыбы"><label>Оқу мақсаты</label><textarea id="goal" placeholder="Оқу мақсаты"></textarea></div></div>
+<div class="card"><h2>Бағалау критерийлері / дескрипторлар</h2><textarea id="rubric" placeholder="Әр жолға бір дескриптор. Мысалы: Формуланы дұрыс қолданады | 2"></textarea><button onclick="saveLesson()">Сабақты сақтау</button> <span id="saveMsg" class="muted"></span></div>
+</section>
+
+<section id="students" class="panel">
+<div class="grid">
+<div class="card"><h2>👥 Сыныпты басқару</h2>
+<label>Сынып атауы</label><input id="className" value="7А">
+<label>Оқушының аты-жөні</label><input id="newStudentName" placeholder="Мысалы: Айдос Нұрланұлы">
+<button onclick="addStudent()">Оқушы қосу</button>
+<button class="secondary" onclick="clearClass()">Тізімді тазалау</button> <button onclick="restoreDefaultClass()">Дайын 30 оқушыны қайтару</button>
+<hr>
+<h3>Excel/CSV арқылы жүктеу</h3>
+<input id="classFile" type="file" accept=".xlsx,.csv,.txt">
+<button onclick="importClass()">Тізімді импорттау</button>
+<p class="muted">XLSX/CSV/TXT тікелей қабылданады. Бағдарлама «Аты-жөні / ФИО / Оқушы / Name» бағанын автоматты іздейді.</p>
+</div>
+<div class="card"><h2>Сынып статистикасы</h2>
+<p>Оқушы саны: <b id="studentCount">0</b></p>
+<p>Қатысқаны: <b id="presentCount">0</b></p>
+<p>Бағаланғаны: <b id="gradedCount">0</b></p>
+<div class="notice">Әр оқушыға ST01, ST02... ID автоматты беріледі. Осы ID QR-кодпен, жауаппен және журналмен байланысады.</div>
+</div></div>
+<div class="card"><h2>Оқушылар тізімі</h2><div style="overflow:auto"><table><thead><tr><th>#</th><th>Аты-жөні</th><th>ID</th><th>Қатысу</th><th>Баға</th><th>Әрекет</th></tr></thead><tbody id="classBody"></tbody></table></div></div>
+</section>
+
+<section id="answer" class="panel">
+<div class="grid"><div class="card"><h2>Оқушы жауабы</h2><label>Оқушы</label><select id="studentSelect"></select>
+<label>Мәтіндік жауап</label><textarea id="answerText" placeholder="Оқушының жауабын енгізіңіз немесе микрофон қолданыңыз"></textarea>
+<button id="micBtn" onclick="toggleMic()">🎙 Аудио жауап</button> <span id="micStatus" class="muted"></span>
+<label>Жауап файлы</label><input id="answerFile" type="file" accept=".txt,.pdf,.docx,.jpg,.jpeg,.png,.wav,.mp3,.m4a">
+<button class="good" onclick="analyze()">Талдау</button></div>
+<div class="card"><h2>AI көмекші нәтижесі</h2><div class="score"><span id="aiScore">—</span></div><div id="analysisText" class="muted">Жауап әлі талданбады.</div><hr><label>Мұғалімнің қорытынды балы</label><input id="teacherScore" type="number" min="0"><button onclick="approve()">Растау және журналға енгізу</button></div></div>
+<div class="notice">Бұл прототип AI балын тек ұсыныс ретінде береді. Қорытынды бағалауды мұғалім растайды. Аудио тану браузердің Web Speech API мүмкіндігіне тәуелді.</div>
+</section>
+
+<section id="camera" class="panel">
+<div class="grid">
+<div class="card"><h2>📷 QR арқылы қатысуды тіркеу</h2>
+<div id="reader"></div>
+<button id="scanBtn" onclick="startQR()">QR сканерлеуді бастау</button>
+<button class="secondary" onclick="stopQR()">Тоқтату</button>
+<p id="qrStatus" class="muted">Камера іске қосылмаған.</p>
+</div>
+<div class="card"><h2>👤 Оқушы QR-коды</h2>
+<select id="qrStudent"></select>
+<div id="qrCanvas" class="qrbox"></div>
+<button onclick="makeQR()">QR жасау</button>
+<button class="secondary" onclick="printQR()">Басып шығару</button>
+<p class="muted">Әр оқушының QR-кодында тек оның ST01–ST30 ID коды сақталады.</p>
+</div></div>
+<div class="card"><h2>Қатысу тізімі <span id="attendanceCount" class="badge">0/30</span></h2>
+<div class="att-row"><b>#</b><b>Оқушы</b><b>ID</b><b>Уақыты</b><b>Күйі</b></div>
+<div id="attendanceList"></div>
+</div></section>
+
+<section id="journal" class="panel"><div class="card"><h2>Электронды журнал</h2><button onclick="exportCSV()">CSV жүктеу</button><div style="overflow:auto"><table><thead><tr><th>#</th><th>Оқушы</th><th>ID</th><th>AI ұсынысы</th><th>Мұғалім балы</th><th>Күйі</th></tr></thead><tbody id="journalBody"></tbody></table></div></div></section>
+</div>
+<script>
+const defaultNames=['Айдос Нұрланұлы','Аружан Серікқызы','Әлихан Маратұлы','Айару Ермекқызы','Данияр Асқарұлы','Мадина Болатқызы','Нұрасыл Жандосұлы','Аяла Қанатқызы','Ерасыл Бауыржанұлы','Інжу Талғатқызы','Арсен Дәуренұлы','Томирис Айбекқызы','Мирас Саматұлы','Айым Ерланқызы','Санжар Русланұлы','Кәусар Нұрбекқызы','Әмір Әділұлы','Назерке Қайратқызы','Рамазан Олжасұлы','Алина Мақсатқызы','Нұрдәулет Серікұлы','Жансая Арманқызы','Әділет Бекзатұлы','Аружан Нұржанқызы','Ислам Даниярұлы','Айша Ерболқызы','Темірлан Азаматұлы','Мерей Асхатқызы','Әли Бауыржанұлы','Сезім Жомартқызы'];
+let students=JSON.parse(localStorage.getItem('classStudents')||'null') || defaultNames.map((name,i)=>({id:`ST${String(i+1).padStart(2,'0')}`,name,ai:'—',teacher:'—'}));
+let lesson={rubric:[]},stream=null,camSeconds=0,camTimer=null,recognition=null,listening=false;
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab,.panel').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.p).classList.add('active')});
+function renderStudents(){studentGrid.innerHTML=students.map((s,i)=>`<div class="student" onclick="pickStudent(${i})"><span class="badge">${s.id}</span><b>${s.name}</b><span class="muted">Баға: ${s.teacher}</span></div>`).join('');studentSelect.innerHTML=students.map((s,i)=>`<option value="${i}">${s.id} — ${s.name}</option>`).join('');renderJournal()}
+function pickStudent(i){studentSelect.value=i;document.querySelector('[data-p=answer]').click()}
+async function uploadQMJ(){let f=qmjFile.files[0];if(!f)return fileStatus.textContent='Алдымен файл таңдаңыз.';fileStatus.textContent='Өңделуде...';let fd=new FormData();fd.append('file',f);try{let r=await fetch('/api/parse',{method:'POST',body:fd});let d=await r.json();fileStatus.textContent=d.message||'Оқылды';if(d.text){goal.value=d.text.slice(0,1200)}}catch(e){fileStatus.textContent='Backend қосылмаған. Файл таңдалды: '+f.name}}
+function saveLesson(){lesson={subject:subject.value,topic:topic.value,goal:goal.value,rubric:rubric.value.split('\n').filter(Boolean).map(x=>{let [text,pts]=x.split('|');return {text:text.trim(),pts:Number(pts)||1}})};localStorage.setItem('lesson',JSON.stringify(lesson));saveMsg.textContent='Сақталды ✓'}
+function scoreAnswer(text){if(!lesson.rubric.length)return {score:0,max:0,items:[],note:'Дескриптор енгізілмеген.'};let words=new Set(text.toLowerCase().match(/[\p{L}\p{N}]+/gu)||[]),score=0,max=0,items=[];lesson.rubric.forEach(r=>{max+=r.pts;let keys=(r.text.toLowerCase().match(/[\p{L}\p{N}]+/gu)||[]).filter(w=>w.length>4);let hit=keys.length?keys.filter(w=>words.has(w)).length/keys.length:0;let ok=hit>=.25;if(ok)score+=r.pts;items.push(`${ok?'✓':'○'} ${r.text} — ${ok?r.pts:0}/${r.pts}`)});return {score,max,items,note:'Прототиптік сәйкестік талдауы. Нақты AI моделін backend-ке қосуға болады.'}}
+function analyze(){let r=scoreAnswer(answerText.value);aiScore.textContent=`${r.score}/${r.max}`;analysisText.innerHTML=r.items.join('<br>')+'<br><br>'+r.note;students[+studentSelect.value].ai=`${r.score}/${r.max}`;teacherScore.value=r.score;renderStudents()}
+function approve(){let s=students[+studentSelect.value];s.teacher=teacherScore.value||'—';localStorage.setItem('students',JSON.stringify(students));
+let qrScanner=null;
+let attendance=JSON.parse(localStorage.getItem('attendance')||'{}');
+
+function setupQR(){
+  qrStudent.innerHTML=students.map((s,i)=>`<option value="${i}">${s.id} — ${s.name}</option>`).join('');
+  renderAttendance();
+}
+function makeQR(){
+  let s=students[+qrStudent.value];
+  qrCanvas.innerHTML='';
+  if(typeof QRCode==='undefined'){qrCanvas.innerHTML='<p>QR кітапханасы жүктелмеді. Интернетті тексеріңіз.</p>';return}
+  QRCode.toCanvas(s.id,{width:220,margin:2},(err,canvas)=>{
+    if(err){qrCanvas.textContent='QR жасау қатесі';return}
+    qrCanvas.appendChild(canvas);
+    let label=document.createElement('p');label.innerHTML=`<b>${s.name}</b><br>${s.id}`;qrCanvas.appendChild(label);
+  });
+}
+async function startQR(){
+  if(typeof Html5Qrcode==='undefined'){qrStatus.textContent='QR сканер кітапханасы жүктелмеді. Интернетті тексеріңіз.';return}
+  if(qrScanner)return;
+  qrScanner=new Html5Qrcode("reader");
+  try{
+    await qrScanner.start({facingMode:"environment"},{fps:10,qrbox:{width:250,height:250}},onQR,()=>{});
+    qrStatus.textContent='QR күтілуде...';
+  }catch(e){qrStatus.textContent='Камера ашылмады: '+e}
+}
+async function stopQR(){
+  if(qrScanner){try{await qrScanner.stop()}catch(e){};try{qrScanner.clear()}catch(e){};qrScanner=null}
+  qrStatus.textContent='QR сканер тоқтатылды.';
+}
+function onQR(decoded){
+  let id=decoded.trim().toUpperCase();
+  let s=students.find(x=>x.id===id);
+  if(!s){qrStatus.textContent='Белгісіз QR: '+id;return}
+  if(!attendance[id]){
+    attendance[id]={time:new Date().toLocaleTimeString('kk-KZ',{hour:'2-digit',minute:'2-digit'}),present:true};
+    localStorage.setItem('attendance',JSON.stringify(attendance));
+    renderAttendance();
+    qrStatus.textContent=`✅ ${s.name} (${s.id}) — қатысу тіркелді`;
+  } else qrStatus.textContent=`ℹ️ ${s.name} бұрын тіркелген: ${attendance[id].time}`;
+}
+function toggleAttendance(id){
+  if(attendance[id]) delete attendance[id];
+  else attendance[id]={time:new Date().toLocaleTimeString('kk-KZ',{hour:'2-digit',minute:'2-digit'}),present:true};
+  localStorage.setItem('attendance',JSON.stringify(attendance));renderAttendance();
+}
+function renderAttendance(){
+  let count=students.filter(s=>attendance[s.id]).length;
+  attendanceCount.textContent=`${count}/30`;
+  attendanceList.innerHTML=students.map((s,i)=>{
+    let a=attendance[s.id];
+    return `<div class="att-row"><span>${i+1}</span><span>${s.name}</span><span>${s.id}</span><span>${a?a.time:'—'}</span><span class="${a?'present':'absent'}" style="cursor:pointer" onclick="toggleAttendance('${s.id}')">${a?'✅ Келді':'❌ Келмеді'}</span></div>`;
+  }).join('');
+}
+function printQR(){
+  let c=qrCanvas.querySelector('canvas'); if(!c){makeQR();return}
+  let s=students[+qrStudent.value],w=window.open('','_blank');
+  w.document.write(`<html><body style="font-family:Arial;text-align:center;padding:40px"><h2>${s.name}</h2><img src="${c.toDataURL()}"><h3>${s.id}</h3><script>window.onload=()=>window.print()<\/script></body></html>`);
+  w.document.close();
+}
+
+
+
+function restoreDefaultClass(){
+  if(!confirm('Дайын 30 оқушы тізімін орнату керек пе?')) return;
+  students=defaultNames.map((name,i)=>({id:`ST${String(i+1).padStart(2,'0')}`,name,ai:'—',teacher:'—'}));
+  attendance={};localStorage.removeItem('attendance');syncAll();
+}
+
+function persistStudents(){localStorage.setItem('classStudents',JSON.stringify(students))}
+function refreshIds(){students.forEach((s,i)=>s.id=`ST${String(i+1).padStart(2,'0')}`)}
+function renderClass(){
+  if(!document.getElementById('classBody'))return;
+  classBody.innerHTML=students.map((s,i)=>`<tr><td>${i+1}</td><td><input value="${s.name.replace(/"/g,'&quot;')}" onchange="renameStudent(${i},this.value)" style="margin:0"></td><td>${s.id}</td><td>${attendance&&attendance[s.id]?'✅ Келді':'—'}</td><td>${s.teacher}</td><td><button class="secondary" onclick="removeStudent(${i})">Өшіру</button></td></tr>`).join('');
+  studentCount.textContent=students.length;
+  presentCount.textContent=students.filter(s=>attendance&&attendance[s.id]).length;
+  gradedCount.textContent=students.filter(s=>s.teacher!=='—').length;
+}
+function syncAll(){refreshIds();persistStudents();renderStudents();setupQR();renderClass();renderJournal()}
+function addStudent(){
+  let name=newStudentName.value.trim();if(!name)return alert('Оқушының аты-жөнін енгізіңіз');
+  if(students.length>=40)return alert('Бұл прототипте 40 оқушыға дейін.');
+  students.push({id:'',name,ai:'—',teacher:'—'});newStudentName.value='';syncAll()
+}
+function renameStudent(i,name){students[i].name=name.trim()||students[i].name;persistStudents();renderStudents();setupQR();renderJournal()}
+function removeStudent(i){if(confirm(students[i].name+' оқушысын өшіру керек пе?')){students.splice(i,1);syncAll()}}
+function clearClass(){if(confirm('Барлық оқушыны тізімнен өшіру керек пе?')){students=[];attendance={};localStorage.removeItem('attendance');syncAll()}}
+async function importClass(){
+  let f=classFile.files[0];if(!f)return alert('XLSX, CSV немесе TXT файлын таңдаңыз');
+  let fd=new FormData();fd.append('file',f);
+  try{
+    let resp=await fetch('/api/import-class',{method:'POST',body:fd});
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    let d=await resp.json();
+    if(!d.students || !d.students.length){alert('Оқушы аты-жөні табылмады. Файлдағы баған атауын тексеріңіз.');return}
+    students=d.students.map((name,i)=>({id:`ST${String(i+1).padStart(2,'0')}`,name,ai:'—',teacher:'—'}));
+    attendance={};localStorage.removeItem('attendance');syncAll();
+    alert(d.count+' оқушы импортталды');
+  }catch(e){alert('Импорт қатесі: '+e.message)}
+}
+
+renderStudents();
+renderClass();
+setupQR();alert('Журналға енгізілді')}
+function toggleMic(){let SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){micStatus.textContent='Бұл браузер Speech Recognition қолдамайды.';return}if(listening){recognition.stop();return}recognition=new SR();recognition.lang='kk-KZ';recognition.continuous=true;recognition.interimResults=true;recognition.onstart=()=>{listening=true;micStatus.textContent='Тыңдап тұр...'};recognition.onresult=e=>{let t='';for(let i=0;i<e.results.length;i++)t+=e.results[i][0].transcript+' ';answerText.value=t};recognition.onend=()=>{listening=false;micStatus.textContent='Тоқтады'};recognition.start()}
+async function startCamera(){try{stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});video.srcObject=stream;camTimer=setInterval(()=>{camSeconds++;camTime.textContent=fmt(camSeconds)},1000)}catch(e){alert('Камераға рұқсат берілмеді')}}
+function stopCamera(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;clearInterval(camTimer)}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function renderJournal(){journalBody.innerHTML=students.map((s,i)=>`<tr><td>${i+1}</td><td>${s.name}</td><td>${s.id}</td><td>${s.ai}</td><td>${s.teacher}</td><td>${s.teacher==='—'?'Күтуде':'Расталды'}</td></tr>`).join('')}
+function exportCSV(){let rows=[['№','Оқушы','ID','AI','Мұғалім'],...students.map((s,i)=>[i+1,s.name,s.id,s.ai,s.teacher])];let csv='\ufeff'+rows.map(r=>r.join(';')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='journal.csv';a.click()}
+let saved=localStorage.getItem('lesson');if(saved){lesson=JSON.parse(saved);subject.value=lesson.subject||'';topic.value=lesson.topic||'';goal.value=lesson.goal||'';rubric.value=(lesson.rubric||[]).map(r=>`${r.text} | ${r.pts}`).join('\n')}
+
+let qrScanner=null;
+let attendance=JSON.parse(localStorage.getItem('attendance')||'{}');
+
+function setupQR(){
+  qrStudent.innerHTML=students.map((s,i)=>`<option value="${i}">${s.id} — ${s.name}</option>`).join('');
+  renderAttendance();
+}
+function makeQR(){
+  let s=students[+qrStudent.value];
+  qrCanvas.innerHTML='';
+  if(typeof QRCode==='undefined'){qrCanvas.innerHTML='<p>QR кітапханасы жүктелмеді. Интернетті тексеріңіз.</p>';return}
+  QRCode.toCanvas(s.id,{width:220,margin:2},(err,canvas)=>{
+    if(err){qrCanvas.textContent='QR жасау қатесі';return}
+    qrCanvas.appendChild(canvas);
+    let label=document.createElement('p');label.innerHTML=`<b>${s.name}</b><br>${s.id}`;qrCanvas.appendChild(label);
+  });
+}
+async function startQR(){
+  if(typeof Html5Qrcode==='undefined'){qrStatus.textContent='QR сканер кітапханасы жүктелмеді. Интернетті тексеріңіз.';return}
+  if(qrScanner)return;
+  qrScanner=new Html5Qrcode("reader");
+  try{
+    await qrScanner.start({facingMode:"environment"},{fps:10,qrbox:{width:250,height:250}},onQR,()=>{});
+    qrStatus.textContent='QR күтілуде...';
+  }catch(e){qrStatus.textContent='Камера ашылмады: '+e}
+}
+async function stopQR(){
+  if(qrScanner){try{await qrScanner.stop()}catch(e){};try{qrScanner.clear()}catch(e){};qrScanner=null}
+  qrStatus.textContent='QR сканер тоқтатылды.';
+}
+function onQR(decoded){
+  let id=decoded.trim().toUpperCase();
+  let s=students.find(x=>x.id===id);
+  if(!s){qrStatus.textContent='Белгісіз QR: '+id;return}
+  if(!attendance[id]){
+    attendance[id]={time:new Date().toLocaleTimeString('kk-KZ',{hour:'2-digit',minute:'2-digit'}),present:true};
+    localStorage.setItem('attendance',JSON.stringify(attendance));
+    renderAttendance();
+    qrStatus.textContent=`✅ ${s.name} (${s.id}) — қатысу тіркелді`;
+  } else qrStatus.textContent=`ℹ️ ${s.name} бұрын тіркелген: ${attendance[id].time}`;
+}
+function toggleAttendance(id){
+  if(attendance[id]) delete attendance[id];
+  else attendance[id]={time:new Date().toLocaleTimeString('kk-KZ',{hour:'2-digit',minute:'2-digit'}),present:true};
+  localStorage.setItem('attendance',JSON.stringify(attendance));renderAttendance();
+}
+function renderAttendance(){
+  let count=students.filter(s=>attendance[s.id]).length;
+  attendanceCount.textContent=`${count}/30`;
+  attendanceList.innerHTML=students.map((s,i)=>{
+    let a=attendance[s.id];
+    return `<div class="att-row"><span>${i+1}</span><span>${s.name}</span><span>${s.id}</span><span>${a?a.time:'—'}</span><span class="${a?'present':'absent'}" style="cursor:pointer" onclick="toggleAttendance('${s.id}')">${a?'✅ Келді':'❌ Келмеді'}</span></div>`;
+  }).join('');
+}
+function printQR(){
+  let c=qrCanvas.querySelector('canvas'); if(!c){makeQR();return}
+  let s=students[+qrStudent.value],w=window.open('','_blank');
+  w.document.write(`<html><body style="font-family:Arial;text-align:center;padding:40px"><h2>${s.name}</h2><img src="${c.toDataURL()}"><h3>${s.id}</h3><script>window.onload=()=>window.print()<\/script></body></html>`);
+  w.document.close();
+}
+
+
+
+function restoreDefaultClass(){
+  if(!confirm('Дайын 30 оқушы тізімін орнату керек пе?')) return;
+  students=defaultNames.map((name,i)=>({id:`ST${String(i+1).padStart(2,'0')}`,name,ai:'—',teacher:'—'}));
+  attendance={};localStorage.removeItem('attendance');syncAll();
+}
+
+function persistStudents(){localStorage.setItem('classStudents',JSON.stringify(students))}
+function refreshIds(){students.forEach((s,i)=>s.id=`ST${String(i+1).padStart(2,'0')}`)}
+function renderClass(){
+  if(!document.getElementById('classBody'))return;
+  classBody.innerHTML=students.map((s,i)=>`<tr><td>${i+1}</td><td><input value="${s.name.replace(/"/g,'&quot;')}" onchange="renameStudent(${i},this.value)" style="margin:0"></td><td>${s.id}</td><td>${attendance&&attendance[s.id]?'✅ Келді':'—'}</td><td>${s.teacher}</td><td><button class="secondary" onclick="removeStudent(${i})">Өшіру</button></td></tr>`).join('');
+  studentCount.textContent=students.length;
+  presentCount.textContent=students.filter(s=>attendance&&attendance[s.id]).length;
+  gradedCount.textContent=students.filter(s=>s.teacher!=='—').length;
+}
+function syncAll(){refreshIds();persistStudents();renderStudents();setupQR();renderClass();renderJournal()}
+function addStudent(){
+  let name=newStudentName.value.trim();if(!name)return alert('Оқушының аты-жөнін енгізіңіз');
+  if(students.length>=40)return alert('Бұл прототипте 40 оқушыға дейін.');
+  students.push({id:'',name,ai:'—',teacher:'—'});newStudentName.value='';syncAll()
+}
+function renameStudent(i,name){students[i].name=name.trim()||students[i].name;persistStudents();renderStudents();setupQR();renderJournal()}
+function removeStudent(i){if(confirm(students[i].name+' оқушысын өшіру керек пе?')){students.splice(i,1);syncAll()}}
+function clearClass(){if(confirm('Барлық оқушыны тізімнен өшіру керек пе?')){students=[];attendance={};localStorage.removeItem('attendance');syncAll()}}
+async function importClass(){
+  let f=classFile.files[0];if(!f)return alert('CSV немесе TXT файлын таңдаңыз');
+  let text=await f.text();
+  let lines=text.split(/\r?\n/).map(x=>x.split(/[;,]/)[0].trim()).filter(Boolean);
+  if(lines.length && /аты|оқушы|name/i.test(lines[0]))lines.shift();
+  students=lines.slice(0,40).map((name,i)=>({id:`ST${String(i+1).padStart(2,'0')}`,name,ai:'—',teacher:'—'}));
+  attendance={};localStorage.removeItem('attendance');syncAll();alert(students.length+' оқушы импортталды')
+}
+
+renderStudents();
+renderClass();
+setupQR();
+</script></body></html>
