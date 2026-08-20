@@ -192,7 +192,10 @@ def normalize_task(t, i):
         "descriptor": str(_pick(t,"descriptor","descriptors","criterion","criteria",default="")),
         "type": str(_pick(t,"type","format",default="short")),
         "options": options,
-        "max_score": _pick(t,"max_score","maxScore","score",default=1)
+        "max_score": _pick(t,"max_score","maxScore","score",default=1),
+        "work_mode": str(_pick(t,"work_mode","workMode","mode",default="individual")),
+        "group_name": str(_pick(t,"group_name","groupName","group",default="")),
+        "external_url": str(_pick(t,"external_url","externalUrl","url","link",default=""))
     }
 
 def normalize_lesson(raw):
@@ -333,6 +336,20 @@ async def audio_transcribe(file: UploadFile=File(...), provider: str="openai"):
         if r.status_code>=400: raise HTTPException(r.status_code,f"Gemini audio: {r.text[:500]}")
         text=r.json()["candidates"][0]["content"]["parts"][0]["text"]
         return {"provider":"gemini","text":text.strip()}
+
+
+URL_RE = re.compile(r'https?://[^\s<>"\')\]]+')
+
+class ResourceExtract(BaseModel):
+    text: str
+
+@app.post("/api/resources/extract")
+def extract_resources(body: ResourceExtract):
+    urls=[]
+    for u in URL_RE.findall(body.text or ""):
+        u=u.rstrip(".,;:")
+        if u not in urls: urls.append(u)
+    return {"resources":[{"url":u,"approved":False} for u in urls[:30]]}
 
 # ---------------- Lesson / task sessions ----------------
 LESSONS={}
