@@ -1,22 +1,13 @@
-# AI Мұғалім көмекшісі
+# AI Мұғалім көмекшісі — Gemini + OpenAI
 
-**ZEREK Education**  
-**Жоба авторы: ҚОҚАЙ ЖІГЕР**
+Render Environment Variables ішіне кемінде біреуін қосыңыз:
 
-## Негізгі мүмкіндіктер
-- ҚМЖ PDF/DOCX/XLSX/PPTX оқу
-- ҚМЖ-дан тақырып, оқу мақсаты және тапсырмаларды автоматты анықтау
-- Мұғалімнің HTML форматына ұсынысын қабылдау
-- Интерактивті HTML тапсырма генерациясы
-- Ортақ QR арқылы қатысу
-- Камераның қосулы уақыты және қозғалыс сигналы (эмоция/зейінді болжамайды)
-- Ауызша жауапты браузер Speech Recognition арқылы мәтінге айналдыру
-- Оқушыға жеке оқу мақсаты бойынша талдау
-- CSV журнал
+- `GEMINI_API_KEY`
+- `OPENAI_API_KEY`
 
-## Gemini қосу
-Render → Environment Variables:
-- `GEMINI_API_KEY` = өз Gemini API кілтіңіз
-- `GEMINI_MODEL` = `gemini-2.5-flash` (міндетті емес)
+Қосымша:
+- `GEMINI_MODEL=gemini-2.5-flash`
+- `OPENAI_MODEL=gpt-5.6`
+- `OPENAI_TRANSCRIBE_MODEL=gpt-4o-mini-transcribe`
 
-API кілтін GitHub кодына жазбаңыз.
+API кілттерін GitHub файлына жазбаңыз.

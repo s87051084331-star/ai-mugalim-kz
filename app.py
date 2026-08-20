@@ -97,73 +97,154 @@ async def import_class(file: UploadFile = File(...)):
     data=await file.read(); names=parse_class(file.filename,data)
     return {"count":len(names),"students":names,"message":f"{len(names)} оқушы табылды"}
 
-# ---------------- Optional Gemini helper ----------------
-async def gemini_json(prompt: str):
+# ---------------- Selectable AI provider: Gemini / OpenAI ----------------
+import base64
+
+def _json_from_text(text: str):
+    text=(text or "").strip()
+    if text.startswith("```"):
+        text=re.sub(r"^```(?:json)?\s*","",text)
+        text=re.sub(r"\s*```$","",text)
+    return json.loads(text)
+
+async def gemini_text_json(prompt: str):
     key=os.getenv("GEMINI_API_KEY","").strip()
-    if not key:return None
+    if not key: raise HTTPException(400,"GEMINI_API_KEY Render Environment ішінде орнатылмаған.")
     import httpx
     model=os.getenv("GEMINI_MODEL","gemini-2.5-flash")
     url=f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
     payload={"contents":[{"parts":[{"text":prompt}]}],"generationConfig":{"responseMimeType":"application/json"}}
-    async with httpx.AsyncClient(timeout=60) as client:
+    async with httpx.AsyncClient(timeout=90) as client:
         r=await client.post(url,json=payload)
-        if r.status_code>=400: raise HTTPException(r.status_code, f"Gemini: {r.text[:300]}")
+        if r.status_code>=400: raise HTTPException(r.status_code,f"Gemini: {r.text[:500]}")
         text=r.json()["candidates"][0]["content"]["parts"][0]["text"]
-        return json.loads(text)
+        return _json_from_text(text)
+
+async def openai_text_json(prompt: str):
+    key=os.getenv("OPENAI_API_KEY","").strip()
+    if not key: raise HTTPException(400,"OPENAI_API_KEY Render Environment ішінде орнатылмаған.")
+    import httpx
+    model=os.getenv("OPENAI_MODEL","gpt-5.6")
+    payload={"model":model,"input":prompt}
+    async with httpx.AsyncClient(timeout=120) as client:
+        r=await client.post("https://api.openai.com/v1/responses",headers={"Authorization":f"Bearer {key}","Content-Type":"application/json"},json=payload)
+        if r.status_code>=400: raise HTTPException(r.status_code,f"OpenAI: {r.text[:500]}")
+        data=r.json()
+        chunks=[]
+        for item in data.get("output",[]):
+            if item.get("type")=="message":
+                for c in item.get("content",[]):
+                    if c.get("type")=="output_text": chunks.append(c.get("text",""))
+        return _json_from_text("\n".join(chunks))
+
+async def ai_json(provider: str, prompt: str):
+    provider=(provider or "gemini").lower()
+    if provider=="openai": return await openai_text_json(prompt)
+    return await gemini_text_json(prompt)
+
+@app.get("/api/ai/status")
+def ai_status():
+    return {
+        "gemini": bool(os.getenv("GEMINI_API_KEY","").strip()),
+        "openai": bool(os.getenv("OPENAI_API_KEY","").strip()),
+        "gemini_model": os.getenv("GEMINI_MODEL","gemini-2.5-flash"),
+        "openai_model": os.getenv("OPENAI_MODEL","gpt-5.6")
+    }
 
 class KmjAnalyze(BaseModel):
     text: str
     hint: str = ""
+    provider: str = "gemini"
 
 @app.post("/api/kmj/analyze")
 async def kmj_analyze(body: KmjAnalyze):
-    prompt=f"""Сен Қазақстан мұғаліміне арналған көмекшісің. ҚМЖ мәтінін талда.
-Тек JSON қайтар: subject, class_name, topic, learning_objective, lesson_goal,
+    prompt=f"""Сен Қазақстан мұғаліміне арналған AI көмекшісің. ҚМЖ мәтінін мұқият талда.
+Тек жарамды JSON қайтар: subject, class_name, topic, learning_objective, lesson_goal,
 tasks массиві: id, title, question, answer, descriptor, type.
-Тапсырмаларды ҚМЖ-дан ғана ал. Жоқ жауапты бос қалдыр.
+ҚМЖ-дағы нақты тапсырмаларды жоғалтпа. Жоқ жауапты бос қалдыр. Ойдан оқу мақсатын қоспа.
 Мұғалім ескертпесі: {body.hint}
 ҚМЖ:
-{body.text[:45000]}"""
-    data=await gemini_json(prompt)
-    if data:return {"mode":"gemini","data":data}
-    # Offline heuristic fallback
-    text=body.text
-    def find(label):
-        m=re.search(label+r"\s*[:\-]?\s*([^\n|]{3,250})",text,re.I)
-        return m.group(1).strip() if m else ""
-    topic=find(r"(Сабақтың тақырыбы|Сабақ тақырыбы|Тақырып)")
-    objective=find(r"(Оқу мақсаты|Оқу мақсаттары)")
-    subject=find(r"(Пән)")
-    cls=find(r"(Сынып)")
-    tasks=[]
-    patterns=re.split(r"(?i)(?=\b\d+\s*[-.)]?\s*тапсырма\b|тапсырма\s*\d+)",text)
-    for p in patterns:
-        if re.search(r"(?i)тапсырма",p) and len(p.strip())>15:
-            q=re.sub(r"\s+"," ",p.strip())[:800]
-            tasks.append({"id":len(tasks)+1,"title":f"{len(tasks)+1}-тапсырма","question":q,"answer":"","descriptor":"","type":"short"})
-    return {"mode":"heuristic","data":{"subject":subject,"class_name":cls,"topic":topic,"learning_objective":objective,"lesson_goal":"","tasks":tasks[:12]}}
+{body.text[:50000]}"""
+    try:
+        data=await ai_json(body.provider,prompt)
+        return {"mode":body.provider,"data":data}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500,f"AI талдау қатесі: {e}")
 
 class TaskGenerate(BaseModel):
     lesson: dict
     format: str
     instruction: str = ""
+    provider: str = "gemini"
 
 @app.post("/api/tasks/generate")
 async def task_generate(body: TaskGenerate):
-    prompt=f"""ҚМЖ-дан алынған мәліметті оқушыға арналған интерактивті тапсырмаға бейімде.
+    prompt=f"""Сен мұғалім берген ҚМЖ негізінде интерактивті HTML тапсырма құрылымын дайындайсың.
 Формат: {body.format}
-Мұғалім ұсынысы: {body.instruction}
-Тек JSON қайтар: tasks массиві. Әр элемент: id,type,question,options(array),correct_answer,descriptor,max_score.
-type тек: test, match, fill, truefalse, short.
-Оқу мақсаты мен ҚМЖ мазмұнын сақта. Жаңа оқу мақсатын ойдан қоспа.
-Дерек: {json.dumps(body.lesson,ensure_ascii=False)[:35000]}"""
-    data=await gemini_json(prompt)
-    if data:return {"mode":"gemini","data":data}
-    source=body.lesson.get("tasks",[])
-    tasks=[]
-    for i,t in enumerate(source,1):
-        tasks.append({"id":i,"type":"short","question":t.get("question",""),"options":[],"correct_answer":t.get("answer",""),"descriptor":t.get("descriptor",""),"max_score":1})
-    return {"mode":"heuristic","data":{"tasks":tasks}}
+Мұғалімнің міндетті ұсынысы: {body.instruction}
+Тек жарамды JSON қайтар: {{"tasks":[...]}}.
+Әр тапсырма: id,type,question,options(array),correct_answer,descriptor,max_score.
+type тек test, match, fill, truefalse, short.
+Оқу мақсатын сақта. ҚМЖ-да жоқ мазмұнды орынсыз қоспа.
+ҚМЖ дерегі:
+{json.dumps(body.lesson,ensure_ascii=False)[:40000]}"""
+    try:
+        data=await ai_json(body.provider,prompt)
+        return {"mode":body.provider,"data":data}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500,f"AI тапсырма жасау қатесі: {e}")
+
+class StudentAnalyze(BaseModel):
+    provider: str = "gemini"
+    lesson: dict
+    student: dict
+
+@app.post("/api/student/analyze")
+async def student_analyze(body: StudentAnalyze):
+    prompt=f"""Сен мұғалімге арналған көмекші AI-сің. Оқушыға баға қойма.
+Оқу мақсатына жетуін дәлелдермен талда және мұғалімге қысқа педагогикалық қорытынды бер.
+Камерадағы қозғалыс көрсеткішін зейін, эмоция немесе оқу жетістігі деп түсіндірме.
+Тек JSON қайтар: summary, objective_status, strengths(array), needs_support(array), evidence(array), next_step.
+Сабақ: {json.dumps(body.lesson,ensure_ascii=False)}
+Оқушы дерегі: {json.dumps(body.student,ensure_ascii=False)}
+"""
+    data=await ai_json(body.provider,prompt)
+    return {"mode":body.provider,"data":data}
+
+@app.post("/api/audio/transcribe")
+async def audio_transcribe(file: UploadFile=File(...), provider: str="openai"):
+    data=await file.read()
+    provider=(provider or "openai").lower()
+    if provider=="openai":
+        key=os.getenv("OPENAI_API_KEY","").strip()
+        if not key: raise HTTPException(400,"OPENAI_API_KEY орнатылмаған.")
+        import httpx
+        model=os.getenv("OPENAI_TRANSCRIBE_MODEL","gpt-4o-mini-transcribe")
+        files={"file":(file.filename or "answer.webm",data,file.content_type or "audio/webm")}
+        form={"model":model,"language":"kk"}
+        async with httpx.AsyncClient(timeout=120) as client:
+            r=await client.post("https://api.openai.com/v1/audio/transcriptions",headers={"Authorization":f"Bearer {key}"},data=form,files=files)
+            if r.status_code>=400: raise HTTPException(r.status_code,f"OpenAI transcription: {r.text[:500]}")
+            return {"provider":"openai","text":r.json().get("text","")}
+    key=os.getenv("GEMINI_API_KEY","").strip()
+    if not key: raise HTTPException(400,"GEMINI_API_KEY орнатылмаған.")
+    import httpx
+    model=os.getenv("GEMINI_MODEL","gemini-2.5-flash")
+    url=f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+    mime=file.content_type or "audio/webm"
+    payload={"contents":[{"parts":[
+        {"text":"Осы аудиодағы қазақша сөйлеуді дәл мәтінге түсір. Тек транскрипт мәтінін қайтар."},
+        {"inline_data":{"mime_type":mime,"data":base64.b64encode(data).decode("ascii")}}
+    ]}]}
+    async with httpx.AsyncClient(timeout=120) as client:
+        r=await client.post(url,json=payload)
+        if r.status_code>=400: raise HTTPException(r.status_code,f"Gemini audio: {r.text[:500]}")
+        text=r.json()["candidates"][0]["content"]["parts"][0]["text"]
+        return {"provider":"gemini","text":text.strip()}
 
 # ---------------- Lesson / task sessions ----------------
 LESSONS={}
