@@ -6,3 +6,4 @@ pypdf
 openpyxl
 python-pptx
 qrcode[pil]>=7.4.2
+httpx>=0.27.0

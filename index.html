@@ -1,194 +1,81 @@
-<!doctype html>
-<html lang="kk">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI Мұғалім көмекшісі — ZEREK Education</title>
+<!doctype html><html lang="kk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Мұғалім көмекшісі</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f6fb;color:#0f172a}
-header{background:#111827;color:white;padding:18px 4%;display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap}
-header h1{margin:0;font-size:27px}.brand{font-size:14px;opacity:.85}
-nav{max-width:1450px;margin:20px auto 0;padding:0 20px;display:flex;gap:10px;flex-wrap:wrap}
-nav button,.btn{border:0;border-radius:12px;padding:12px 18px;font-weight:700;cursor:pointer;font-size:16px}
-nav button{background:#dbeafe;color:#1e40af}.active,.blue{background:#2563eb!important;color:white!important}
-.green{background:#16a34a;color:white}.gray{background:#475569;color:white}.red{background:#dc2626;color:white}
-main{max-width:1450px;margin:18px auto;padding:0 20px}.panel{display:none}.panel.on{display:block}
-.card{background:white;border-radius:20px;padding:24px;margin-bottom:20px;box-shadow:0 8px 25px #0f172a0d}
-h2{font-size:28px;margin:0 0 18px}h3{font-size:21px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-input,textarea,select{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:11px;font-size:16px;margin:6px 0 12px}
-label{font-weight:700}.muted{color:#64748b}.notice{background:#fff7ed;border:1px solid #fdba74;border-radius:12px;padding:12px}
-.ok{background:#ecfdf5;border:1px solid #86efac;border-radius:12px;padding:12px}
-table{width:100%;border-collapse:collapse;min-width:800px}th,td{text-align:left;padding:12px;border-bottom:1px solid #e2e8f0}th{background:#f8fafc}
-.badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#dbeafe;color:#1e40af;font-weight:700}
-.qr img{max-width:280px;width:100%;background:white;padding:10px;border-radius:12px}
-footer{max-width:1450px;margin:30px auto 12px;padding:20px;text-align:center;background:#111827;color:white;border-radius:16px}
-@media(max-width:750px){.grid,.grid3{grid-template-columns:1fr}header h1{font-size:22px}h2{font-size:23px}}
-</style>
-</head>
-<body>
-<header>
-<div><h1>🎓 AI Мұғалім көмекшісі</h1><div class="brand">Қазақстан мұғалімдеріне арналған көмекші құрал</div></div>
-<div><b>ZEREK Education</b> • ҚОҚАЙ ЖІГЕР</div>
-</header>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f6fb;color:#0f172a}header{background:#111827;color:#fff;padding:18px 4%;display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}h1{margin:0}.wrap{max-width:1450px;margin:auto;padding:20px}.tabs{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}.tabs button,button{border:0;border-radius:11px;padding:11px 16px;font-weight:700;cursor:pointer}.tabs button{background:#dbeafe;color:#1e40af}.tabs .on,.blue{background:#2563eb;color:#fff}.green{background:#16a34a;color:#fff}.gray{background:#475569;color:#fff}.red{background:#dc2626;color:#fff}.card{background:#fff;border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 6px 22px #0000000d}.panel{display:none}.panel.on{display:block}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}input,textarea,select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;margin:5px 0 11px;font-size:15px}label{font-weight:700}.notice{background:#fff7ed;border:1px solid #fdba74;padding:12px;border-radius:11px}.ok{background:#ecfdf5;border:1px solid #86efac;padding:12px;border-radius:11px}.muted{color:#64748b}table{width:100%;border-collapse:collapse;min-width:800px}th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left}th{background:#f8fafc}.lessonbar{background:#e0f2fe;border:1px solid #7dd3fc;border-radius:14px;padding:14px;margin-bottom:16px}.qr img{width:260px;max-width:100%;background:white;padding:10px;border-radius:12px}video{width:100%;max-width:640px;background:#111;border-radius:14px}.meter{height:12px;background:#e2e8f0;border-radius:10px;overflow:hidden}.meter span{display:block;height:100%;background:#16a34a;width:0}footer{background:#111827;color:white;text-align:center;padding:18px;margin-top:28px}@media(max-width:760px){.grid,.grid3{grid-template-columns:1fr}}
+</style></head><body>
+<header><div><h1>🎓 AI Мұғалім көмекшісі</h1><div>ZEREK Education • Қазақстан мұғалімдеріне арналған көмекші құрал</div></div><div><b>Жоба авторы: ҚОҚАЙ ЖІГЕР</b></div></header>
+<div class="wrap">
+<div id="lessonBar" class="lessonbar"><b>📚 Ағымдағы сабақ:</b> әлі басталмаған.</div>
+<div class="tabs" id="tabs"><button data-p="kmj" class="on">📘 ҚМЖ</button><button data-p="tasks">📝 HTML тапсырма</button><button data-p="class">👥 Сынып</button><button data-p="qr">📱 QR қатысу</button><button data-p="monitor">📹 Сабақ мониторингі</button><button data-p="oral">🎙️ Ауызша жауап</button><button data-p="analysis">🤖 Жеке талдау</button><button data-p="journal">📊 Журнал</button></div>
 
-<nav id="nav">
-<button data-tab="lesson" class="active">ҚМЖ</button>
-<button data-tab="class">Сыныпты басқару</button>
-<button data-tab="assessment">Бағалау</button>
-<button data-tab="attendance">Қатысу</button>
-<button data-tab="journal">Журнал</button>
-</nav>
+<section id="kmj" class="panel on">
+<div class="card"><h2>📘 ҚМЖ-ны автоматты оқу</h2><div class="grid"><div><input id="kmjFile" type="file" accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv"><button class="blue" id="readKmj">ҚМЖ-ны оқу</button></div><div><label>AI-ға ескерту</label><textarea id="kmjHint" rows="3" placeholder="Мысалы: тек негізгі сабақ тапсырмаларын ал"></textarea></div></div><div id="kmjStatus" class="notice">ҚМЖ жүктелмеді.</div></div>
+<div class="card"><h2>ҚМЖ-дан анықталған сабақ</h2><div class="grid3"><div><label>Пән</label><input id="subject"></div><div><label>Сынып</label><input id="className"></div><div><label>Тақырып</label><input id="topic"></div></div><label>Оқу мақсаты</label><textarea id="objective" rows="3"></textarea><label>Сабақ мақсаты</label><textarea id="lessonGoal" rows="2"></textarea><button class="green" id="startLesson">Осы сабақты ағымдағы сабақ ету</button></div>
+<div class="card"><h2>ҚМЖ-дан табылған тапсырмалар</h2><div id="foundTasks" class="muted">Әзірге тапсырма жоқ.</div></div>
+</section>
 
-<main>
-<section id="lesson" class="panel on">
-<div class="card"><h2>📘 ҚМЖ / сабақ материалы</h2>
-<div class="grid">
-<div><label>Құжат жүктеу</label><input id="lessonFile" type="file" accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv,.jpg,.jpeg,.png"><button class="btn blue" id="parseBtn">Жүктеу және оқу</button><div id="parseStatus" class="notice" style="margin-top:12px">Файл таңдалмады.</div></div>
-<div><label>Пән</label><input id="subject" value="Математика"><label>Сынып</label><input id="className" value="7А"><label>Тақырып</label><input id="topic" placeholder="Сабақ тақырыбы"></div>
-</div>
-<label>Құжаттан алынған мәтін / оқу мақсаты</label><textarea id="lessonText" rows="12"></textarea>
-<button class="btn blue" id="saveLesson">Сабақты сақтау</button>
-</div>
+<section id="tasks" class="panel">
+<div class="card"><h2>📝 ҚМЖ → интерактивті HTML тапсырма</h2><div class="grid"><div><label>Формат</label><select id="taskFormat"><option>AI өзі тиімді форматты таңдасын</option><option>Тест</option><option>Сәйкестендіру</option><option>Бос орынды толтыру</option><option>Дұрыс/Бұрыс</option><option>Қысқа жауап</option><option>Аралас тапсырма</option><option>ЕББҚ оқушысына жеңілдетілген</option><option>Деңгейлік A/B/C</option></select></div><div><label>HTML жасауға ұсыныс</label><textarea id="taskInstruction" rows="4" placeholder="Мысалы: 5 тапсырма. 2 тест, 1 сәйкестендіру, 1 бос орын, 1 күрделі есеп. Әр тапсырма 1 балл."></textarea></div></div><button class="blue" id="generateTasks">HTML тапсырманы дайындау</button><button class="green" id="publishTasks">Оқушыларға жариялау</button><div id="publishInfo" class="notice" style="margin-top:12px">Әлі жарияланбады.</div></div>
+<div class="card"><h2>Алдын ала қарау</h2><div id="taskPreview">Тапсырма жасалмады.</div></div>
 </section>
 
 <section id="class" class="panel">
-<div class="card"><h2>👥 Сыныпты басқару</h2>
-<div class="grid"><div><label>Сынып атауы</label><input id="className2" value="7А"></div><div><label>Оқушының аты-жөні</label><input id="newStudentName" placeholder="Мысалы: Айдос Нұрланұлы"></div></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn blue" id="addStudent">Оқушы қосу</button><button class="btn gray" id="clearStudents">Тізімді тазалау</button><button class="btn blue" id="restoreStudents">Дайын 30 оқушыны қайтару</button></div>
-<hr style="margin:22px 0;border:0;border-top:1px solid #e2e8f0">
-<h3>Excel/CSV арқылы жүктеу</h3><input id="classFile" type="file" accept=".xlsx,.csv,.txt"><button class="btn blue" id="importStudents">Тізімді импорттау</button>
-<div id="importStatus" class="muted" style="margin-top:8px"></div>
-</div>
-<div class="card"><h2>Оқушылар тізімі <span id="studentTotal" class="badge">0</span></h2><div style="overflow:auto"><table><thead><tr><th>#</th><th>Аты-жөні</th><th>ID</th><th>Қатысу</th><th>AI нәтиже</th><th>Мұғалім балы</th><th>Әрекет</th></tr></thead><tbody id="studentBody"></tbody></table></div></div>
+<div class="card"><h2>👥 Сыныпты басқару</h2><div class="grid"><input id="newStudent" placeholder="Оқушы аты-жөні"><input id="classFile" type="file" accept=".xlsx,.csv,.txt"></div><button class="blue" id="addStudent">Оқушы қосу</button><button class="gray" id="importClass">Excel/CSV импорт</button><button class="red" id="clearClass">Тізімді тазалау</button><div id="classStatus" class="muted"></div></div>
+<div class="card"><div style="overflow:auto"><table><thead><tr><th>#</th><th>Оқушы</th><th>ID</th><th>Қатысу</th><th>Тапсырма</th><th>Ауызша жауап</th><th>Мұғалім бағасы</th></tr></thead><tbody id="studentBody"></tbody></table></div></div>
 </section>
 
-<section id="assessment" class="panel">
-<div class="card"><h2>🤖 Бағалау көмекшісі</h2>
-<p class="muted">AI көмекші оқу нәтижесіне сүйеніп баға ұсынады. Қатысу академиялық бағаға автоматты қосылмайды. Соңғы шешімді мұғалім қабылдайды.</p>
-<div class="grid3">
-<div><label>Оқушы</label><select id="assessStudent"></select></div>
-<div><label>Жинаған балл</label><input id="earned" type="number" min="0" value="8"></div>
-<div><label>Максимал балл</label><input id="maximum" type="number" min="1" value="10"></div>
-</div>
-<label>Қысқа түсініктеме</label><textarea id="assessmentNote" rows="4" placeholder="Қай тапсырмаларда қиналды, қандай оқу мақсаты тексерілді..."></textarea>
-<button class="btn blue" id="suggestGrade">AI баға ұсынысын есептеу</button>
-<div id="gradeSuggestion" class="notice" style="margin-top:14px">Нәтиже енгізілмеді.</div>
-<div id="gradeActions" style="display:none;margin-top:12px;gap:8px;flex-wrap:wrap">
-<button class="btn green" id="acceptGrade">Ұсынысты қабылдау</button>
-<input id="manualGrade" type="number" min="2" max="5" placeholder="2–5" style="width:120px;margin:0">
-<button class="btn gray" id="manualGradeBtn">Өзгертіп сақтау</button>
-</div>
-</div>
+<section id="qr" class="panel"><div class="card"><h2>📱 Сабаққа ортақ QR</h2><div class="grid3"><input id="qrClass" placeholder="Сынып"><input id="qrTopic" placeholder="Тақырып"><input id="qrMinutes" type="number" value="10" min="1" max="120"></div><button class="green" id="startQr">Сабақты бастау</button><button class="gray" id="stopQr">Сабақты аяқтау</button><div id="qrBox" class="qr"></div><div id="qrInfo" class="notice">Белсенді QR жоқ.</div></div><div class="card"><h2>Қатысу</h2><div id="attendanceList"></div></div></section>
+
+<section id="monitor" class="panel">
+<div class="card"><h2>📹 Сабақ мониторингі</h2><p class="muted">Камера баланың эмоциясын немесе «зейінін» болжай алмайды. Бұл модуль тек камера қосулы болған уақыт пен кадрдағы қозғалыс сигналын көмекші көрсеткіш ретінде тіркейді.</p><div class="grid"><div><label>Оқушы</label><select id="monitorStudent"></select><button class="green" id="cameraStart">Камераны қосу</button><button class="gray" id="cameraStop">Тоқтату</button></div><div><div>Камера уақыты: <b id="cameraTime">0 сек</b></div><div>Қозғалыс сигналы: <b id="motionText">0%</b></div><div class="meter"><span id="motionBar"></span></div></div></div><video id="video" autoplay muted playsinline></video><canvas id="motionCanvas" width="160" height="120" style="display:none"></canvas></div>
 </section>
 
-<section id="attendance" class="panel">
-<div class="card"><h2>📱 Сабаққа ортақ QR</h2>
-<p class="muted">Бір сабаққа бір QR. Оқушылар телефон камерасымен сканерлеп, аты-жөні мен ID-сін енгізеді.</p>
-<div class="grid3">
-<div><label>Сынып</label><input id="qrClass" value="7А"></div>
-<div><label>Сабақ тақырыбы</label><input id="qrTopic" placeholder="Сабақ"></div>
-<div><label>QR уақыты (минут)</label><input id="qrMinutes" type="number" min="1" max="120" value="10"></div>
-</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn green" id="startQr">Сабақты бастау</button><button class="btn gray" id="stopQr">Сабақты аяқтау</button></div>
-<div id="qrBox" class="qr" style="margin-top:16px"></div>
-<div id="qrInfo" class="notice" style="margin-top:12px">Белсенді QR-сабақ жоқ.</div>
-</div>
-<div class="card"><h2>Қатысу тізімі <span id="presentTotal" class="badge">0</span></h2><div style="overflow:auto"><table><thead><tr><th>#</th><th>Оқушы</th><th>ID</th><th>Уақыт</th><th>Күйі</th></tr></thead><tbody id="attendanceBody"></tbody></table></div></div>
+<section id="oral" class="panel">
+<div class="card"><h2>🎙️ Ауызша жауапты тіркеу</h2><div class="grid"><select id="oralStudent"></select><div><button class="green" id="speechStart">Тыңдауды бастау</button><button class="gray" id="speechStop">Тоқтату</button></div></div><textarea id="transcript" rows="7" placeholder="Оқушының жауабы мәтінге айналады..."></textarea><button class="blue" id="saveOral">Жауапты оқушыға сақтау</button><div id="speechStatus" class="notice">Микрофон өшірулі.</div></div>
 </section>
 
-<section id="journal" class="panel">
-<div class="card"><h2>📊 Электронды журнал</h2>
-<button class="btn blue" id="csvBtn">CSV жүктеу</button>
-<div style="overflow:auto;margin-top:12px"><table><thead><tr><th>#</th><th>Оқушы</th><th>ID</th><th>Қатысу</th><th>AI нәтижесі</th><th>AI ұсынған баға</th><th>Негіздеме</th><th>Мұғалім балы</th></tr></thead><tbody id="journalBody"></tbody></table></div>
-</div>
-</section>
-</main>
+<section id="analysis" class="panel"><div class="card"><h2>🤖 Әр оқушыға жеке талдау</h2><select id="analysisStudent"></select><button class="blue" id="analyzeStudent">Талдау жасау</button><div id="studentAnalysis" class="notice">Оқушыны таңдаңыз.</div></div></section>
 
-<div id="joinScreen" style="display:none;position:fixed;inset:0;background:#f3f6fb;z-index:9999;padding:20px;overflow:auto">
-<div class="card" style="max-width:560px;margin:30px auto"><h2>✅ Сабаққа қатысуды растау</h2><div id="joinLesson" class="notice">Жүктелуде...</div>
-<label>Оқушы ID</label><input id="joinId" placeholder="ST01">
-<label>Аты-жөні</label><input id="joinName" placeholder="Аты-жөніңіз">
-<label>Сынып</label><input id="joinClass" placeholder="7А">
-<button class="btn green" id="joinBtn">Қатыстым</button><div id="joinStatus" class="notice" style="margin-top:12px">Мәліметтерді толтырыңыз.</div></div>
+<section id="journal" class="panel"><div class="card"><h2>📊 Сабақ журналы</h2><button class="blue" id="exportCsv">CSV жүктеу</button><div style="overflow:auto"><table><thead><tr><th>#</th><th>Оқушы</th><th>ID</th><th>Қатысу</th><th>Тапсырма</th><th>Оқу мақсаты</th><th>Мониторинг</th><th>Мұғалім бағасы</th></tr></thead><tbody id="journalBody"></tbody></table></div></div></section>
 </div>
 
-<footer><b>ZEREK Education</b><br>Жоба авторы: <b>ҚОҚАЙ ЖІГЕР</b><br><span style="opacity:.75">AI Мұғалім көмекшісі</span></footer>
+<div id="studentTaskScreen" style="display:none;position:fixed;inset:0;background:#f3f6fb;z-index:9999;padding:20px;overflow:auto"><div class="card" style="max-width:760px;margin:auto"><h2 id="studentTaskTitle">Тапсырма</h2><input id="studentTaskId" placeholder="ST01"><input id="studentTaskName" placeholder="Аты-жөні"><div id="studentTasks"></div><button class="green" id="submitStudentTasks">Жауаптарды жіберу</button><div id="studentTaskResult" class="notice"></div></div></div>
+<div id="joinScreen" style="display:none;position:fixed;inset:0;background:#f3f6fb;z-index:9999;padding:20px;overflow:auto"><div class="card" style="max-width:560px;margin:auto"><h2>✅ Сабаққа қатысу</h2><div id="joinLesson" class="notice"></div><input id="joinId" placeholder="ST01"><input id="joinName" placeholder="Аты-жөні"><input id="joinClass" placeholder="Сынып"><button class="green" id="joinBtn">Қатыстым</button><div id="joinStatus" class="notice"></div></div></div>
+<footer><b>ZEREK Education</b> • Жоба авторы: <b>ҚОҚАЙ ЖІГЕР</b></footer>
 
 <script>
 "use strict";
-const $=id=>document.getElementById(id);
-const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const defaultNames=["Айдос Нұрланұлы","Аружан Серікқызы","Арман Ержанұлы","Аяла Бекқызы","Әлихан Маратұлы","Дана Асқарқызы","Данияр Болатұлы","Еркебұлан Нұржанұлы","Жансая Ермекқызы","Жанель Қайратқызы","Ильяс Саматұлы","Кәусар Дәулетқызы","Мадина Русланқызы","Мирас Әділұлы","Нұрай Аманқызы","Нұрдәулет Азаматұлы","Рамазан Берікұлы","Сабина Талғатқызы","Санжар Олжасұлы","Сая Мақсатқызы","Темірлан Алмасұлы","Томирис Ерланқызы","Ұлжан Бауыржанқызы","Фариза Нұрбекқызы","Хамза Айбарұлы","Шұғыла Ардаққызы","Әмір Әсетұлы","Інжу Жандосқызы","Әсел Қанатқызы","Ясмина Рауанқызы"];
-let students=JSON.parse(localStorage.getItem("students")||"null")||defaultNames.map((name,i)=>({id:"ST"+String(i+1).padStart(2,"0"),name,ai:"—",teacher:"—",why:"—",suggested:"—"}));
-let attendance=JSON.parse(localStorage.getItem("attendance")||"{}");
-let qrToken=localStorage.getItem("qrToken")||"";
-let qrPoll=null, pendingGrade=null;
-
-function save(){localStorage.setItem("students",JSON.stringify(students));localStorage.setItem("attendance",JSON.stringify(attendance))}
+const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let lesson=JSON.parse(localStorage.getItem("currentLesson")||"null")||{subject:"",class_name:"",topic:"",learning_objective:"",lesson_goal:"",tasks:[]};
+let generatedTasks=[],publishedCode="",students=JSON.parse(localStorage.getItem("students")||"[]"),attendance=JSON.parse(localStorage.getItem("attendance")||"{}"),qrToken="",qrPoll=null;
+function save(){localStorage.setItem("currentLesson",JSON.stringify(lesson));localStorage.setItem("students",JSON.stringify(students));localStorage.setItem("attendance",JSON.stringify(attendance))}
+function tabs(){document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#tabs button").forEach(x=>x.classList.remove("on"));b.classList.add("on");document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));$(b.dataset.p).classList.add("on")})}
 function refreshIds(){students.forEach((s,i)=>s.id="ST"+String(i+1).padStart(2,"0"))}
-function renderAll(){refreshIds();save();renderStudents();renderSelectors();renderAttendance();renderJournal()}
-function renderStudents(){
- $("studentTotal").textContent=students.length;
- $("studentBody").innerHTML=students.map((s,i)=>`<tr><td>${i+1}</td><td>${esc(s.name)}</td><td><b>${s.id}</b></td><td>${attendance[s.id]?"✅ Қатысты":"—"}</td><td>${esc(s.ai)}</td><td>${esc(s.teacher)}</td><td><button class="btn red" onclick="removeStudent(${i})">Өшіру</button></td></tr>`).join("");
-}
-window.removeStudent=i=>{if(confirm("Оқушыны өшіру керек пе?")){students.splice(i,1);renderAll()}};
-function renderSelectors(){$("assessStudent").innerHTML=students.map((s,i)=>`<option value="${i}">${s.id} — ${esc(s.name)}</option>`).join("")}
-function renderAttendance(){
- const rows=students.filter(s=>attendance[s.id]);
- $("presentTotal").textContent=rows.length;
- $("attendanceBody").innerHTML=rows.length?rows.map((s,i)=>`<tr><td>${i+1}</td><td>${esc(s.name)}</td><td>${s.id}</td><td>${esc(attendance[s.id].time||"")}</td><td>✅ Қатысты</td></tr>`).join(""):'<tr><td colspan="5">Әзірге қатысу тіркелмеді.</td></tr>';
-}
-function academicRecommendation(s){
- const m=String(s.ai||"").match(/(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/);
- if(!m||Number(m[2])<=0)return {grade:"—",why:"Оқу нәтижесі жоқ."};
- const pct=Number(m[1])/Number(m[2])*100;
- const grade=pct>=85?5:pct>=65?4:pct>=40?3:2;
- return {grade,why:`Оқу нәтижесі ${Math.round(pct)}%. Қатысу бағаға автоматты қосылмайды.`};
-}
-function renderJournal(){
- $("journalBody").innerHTML=students.map((s,i)=>{const r=academicRecommendation(s);return `<tr><td>${i+1}</td><td>${esc(s.name)}</td><td>${s.id}</td><td>${attendance[s.id]?"✅":"—"}</td><td>${esc(s.ai)}</td><td><b>${r.grade}</b></td><td>${esc(r.why)}</td><td>${esc(s.teacher)}</td></tr>`}).join("");
-}
-document.querySelectorAll("#nav button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));$(b.dataset.tab).classList.add("on")}));
-
-$("addStudent").onclick=()=>{const n=$("newStudentName").value.trim();if(!n)return alert("Оқушының аты-жөнін енгізіңіз");students.push({id:"",name:n,ai:"—",teacher:"—",why:"—",suggested:"—"});$("newStudentName").value="";renderAll()};
-$("clearStudents").onclick=()=>{if(confirm("Барлық оқушыны өшіру керек пе?")){students=[];attendance={};renderAll()}};
-$("restoreStudents").onclick=()=>{if(confirm("Дайын 30 оқушы тізімін орнату керек пе?")){students=defaultNames.map(name=>({id:"",name,ai:"—",teacher:"—",why:"—",suggested:"—"}));attendance={};renderAll()}};
-
-$("importStudents").onclick=async()=>{const f=$("classFile").files[0];if(!f)return alert("XLSX/CSV/TXT таңдаңыз");const fd=new FormData();fd.append("file",f);$("importStatus").textContent="Импортталуда...";try{const r=await fetch("/api/import-class",{method:"POST",body:fd});const d=await r.json();if(!r.ok)throw Error("HTTP "+r.status);students=d.students.map(name=>({id:"",name,ai:"—",teacher:"—",why:"—",suggested:"—"}));attendance={};$("importStatus").textContent=d.message;renderAll()}catch(e){$("importStatus").textContent="❌ "+e.message}};
-$("parseBtn").onclick=async()=>{const f=$("lessonFile").files[0];if(!f)return alert("Файл таңдаңыз");const fd=new FormData();fd.append("file",f);$("parseStatus").textContent="Өңделуде...";try{const r=await fetch("/api/parse",{method:"POST",body:fd});const d=await r.json();$("parseStatus").textContent=d.message;$("lessonText").value=d.text||""}catch(e){$("parseStatus").textContent="❌ "+e.message}};
-$("saveLesson").onclick=()=>{localStorage.setItem("lesson",JSON.stringify({subject:$("subject").value,className:$("className").value,topic:$("topic").value,text:$("lessonText").value}));alert("Сабақ сақталды.")};
-
-$("suggestGrade").onclick=()=>{const i=Number($("assessStudent").value),e=Number($("earned").value),m=Number($("maximum").value);if(!students[i]||m<=0||e<0)return alert("Баллдарды тексеріңіз");students[i].ai=`${e}/${m}`;const r=academicRecommendation(students[i]);students[i].suggested=r.grade;students[i].why=r.why;pendingGrade={i,grade:r.grade};$("gradeSuggestion").innerHTML=`<b>${esc(students[i].name)}</b><br>AI ұсынатын баға: <b style="font-size:24px">${r.grade}</b><br>${esc(r.why)}<br><span class="muted">Мұғалім қабылдамайынша бұл ресми баға емес.</span>`;$("gradeActions").style.display="flex";renderAll()};
-$("acceptGrade").onclick=()=>{if(!pendingGrade)return;students[pendingGrade.i].teacher=String(pendingGrade.grade);pendingGrade=null;$("gradeActions").style.display="none";renderAll()};
-$("manualGradeBtn").onclick=()=>{if(!pendingGrade)return;const g=Number($("manualGrade").value);if(g<2||g>5)return alert("2–5 аралығындағы бағаны енгізіңіз");students[pendingGrade.i].teacher=String(g);pendingGrade=null;$("gradeActions").style.display="none";renderAll()};
-
-async function startQr(){
- try{
-  $("qrInfo").textContent="QR жасалуда...";
-  const payload={class_name:$("qrClass").value.trim()||"Сынып",topic:$("qrTopic").value.trim()||"Сабақ",minutes:Number($("qrMinutes").value||10)};
-  const r=await fetch("/api/session/start",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const d=await r.json();if(!r.ok)throw Error(d.detail||"Қате");
-  qrToken=d.token;localStorage.setItem("qrToken",qrToken);
-  const qr="/api/session/"+encodeURIComponent(qrToken)+"/qr.png?base="+encodeURIComponent(location.origin);
-  $("qrBox").innerHTML=`<img src="${qr}" alt="QR"><div><b>Сабақ коды:</b> ${esc(qrToken)}</div>`;
-  $("qrInfo").innerHTML=`<b>${esc(d.class_name)}</b> • ${esc(d.topic)}<br>QR мерзімі: ${new Date(d.expires_at).toLocaleTimeString("kk-KZ")}`;
-  beginQrPoll();
- }catch(e){$("qrInfo").textContent="❌ "+e.message}
-}
-async function stopQr(){try{if(qrToken)await fetch("/api/session/stop/"+encodeURIComponent(qrToken),{method:"POST"})}catch(e){}qrToken="";localStorage.removeItem("qrToken");clearInterval(qrPoll);$("qrBox").innerHTML="";$("qrInfo").textContent="Сабақ аяқталды. QR жарамсыз."}
-function beginQrPoll(){clearInterval(qrPoll);if(!qrToken)return;const pull=async()=>{try{const r=await fetch("/api/session/"+encodeURIComponent(qrToken)+"/attendance");if(!r.ok)return;const d=await r.json();(d.attendance||[]).forEach(a=>{let s=a.student_id?students.find(x=>x.id.toLowerCase()===a.student_id.toLowerCase()):null;if(!s)s=students.find(x=>x.name.trim().toLowerCase()===String(a.name).trim().toLowerCase());if(s)attendance[s.id]={time:a.time,present:true}});renderAll();$("qrInfo").innerHTML=`<b>${esc(d.class_name)}</b> • ${esc(d.topic)}<br>Телефонмен тіркелгені: <b>${(d.attendance||[]).length}</b> • ${d.active?"QR белсенді":"QR аяқталды"}`;if(!d.active)clearInterval(qrPoll)}catch(e){}};pull();qrPoll=setInterval(pull,3000)}
-$("startQr").onclick=startQr;$("stopQr").onclick=stopQr;
-
-async function initJoin(){
- const token=new URLSearchParams(location.search).get("session");if(!token)return;
- $("joinScreen").style.display="block";
- try{const r=await fetch("/api/session/"+encodeURIComponent(token));const d=await r.json();if(!r.ok)throw Error(d.detail||"Қате");$("joinLesson").innerHTML=`<b>${esc(d.class_name)}</b><br>${esc(d.topic)}<br>${d.active?"QR белсенді":"QR аяқталған"}`;$("joinClass").value=d.class_name||""}catch(e){$("joinLesson").textContent="❌ "+e.message}
-}
-$("joinBtn").onclick=async()=>{const token=new URLSearchParams(location.search).get("session");const payload={token,student_id:$("joinId").value.trim(),name:$("joinName").value.trim(),class_name:$("joinClass").value.trim()};if(!payload.name||!payload.class_name)return $("joinStatus").textContent="Аты-жөні мен сыныпты толтырыңыз.";try{const r=await fetch("/api/checkin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const d=await r.json();if(!r.ok)throw Error(d.detail||"Қате");$("joinStatus").innerHTML=`✅ Қатысу тіркелді. Уақыты: <b>${esc(d.time)}</b>`}catch(e){$("joinStatus").textContent="❌ "+e.message}};
-
-$("csvBtn").onclick=()=>{const rows=[["№","Оқушы","ID","Қатысу","AI нәтижесі","AI ұсынған баға","Негіздеме","Мұғалім балы"],...students.map((s,i)=>{const r=academicRecommendation(s);return [i+1,s.name,s.id,attendance[s.id]?"Қатысты":"",s.ai,r.grade,r.why,s.teacher]})];const csv="\ufeff"+rows.map(r=>r.map(v=>'"'+String(v??"").replaceAll('"','""')+'"').join(";")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="ai_mugalim_journal.csv";a.click()};
-
-const savedLesson=JSON.parse(localStorage.getItem("lesson")||"null");if(savedLesson){$("subject").value=savedLesson.subject||"";$("className").value=savedLesson.className||"";$("className2").value=savedLesson.className||"";$("qrClass").value=savedLesson.className||"";$("topic").value=savedLesson.topic||"";$("qrTopic").value=savedLesson.topic||"";$("lessonText").value=savedLesson.text||""}
-renderAll();initJoin();if(qrToken)beginQrPoll();
-</script>
-</body></html>
+function renderLesson(){lesson.subject=$("subject").value||lesson.subject;lesson.class_name=$("className").value||lesson.class_name;lesson.topic=$("topic").value||lesson.topic;lesson.learning_objective=$("objective").value||lesson.learning_objective;lesson.lesson_goal=$("lessonGoal").value||lesson.lesson_goal;$("lessonBar").innerHTML=lesson.topic?`<b>📚 Ағымдағы сабақ:</b> ${esc(lesson.class_name)} • ${esc(lesson.subject)} • <b>${esc(lesson.topic)}</b><br>🎯 ${esc(lesson.learning_objective)}`:"<b>📚 Ағымдағы сабақ:</b> әлі басталмаған.";$("qrClass").value=lesson.class_name||"";$("qrTopic").value=lesson.topic||"";save()}
+function renderStudents(){refreshIds();$("studentBody").innerHTML=students.map((s,i)=>`<tr><td>${i+1}</td><td>${esc(s.name)}</td><td>${s.id}</td><td>${attendance[s.id]?"✅":"—"}</td><td>${s.taskResult?`${s.taskResult.score}/${s.taskResult.total}`:"—"}</td><td>${s.oral?"✅":"—"}</td><td><input value="${esc(s.teacherGrade||"")}" onchange="setGrade(${i},this.value)" style="width:80px"></td></tr>`).join("");["monitorStudent","oralStudent","analysisStudent"].forEach(id=>$(id).innerHTML=students.map((s,i)=>`<option value="${i}">${s.id} — ${esc(s.name)}</option>`).join(""));renderJournal();save()}
+window.setGrade=(i,v)=>{students[i].teacherGrade=v;save();renderJournal()}
+function renderJournal(){$("journalBody").innerHTML=students.map((s,i)=>{let pct=s.taskResult&&s.taskResult.total?Math.round(s.taskResult.score/s.taskResult.total*100):0;let goal=pct>=80?"Жетті":pct>=50?"Жартылай":"Дерек аз";let mon=s.monitor?`${s.monitor.seconds} сек / қозғалыс ${s.monitor.motion}%`:"—";return `<tr><td>${i+1}</td><td>${esc(s.name)}</td><td>${s.id}</td><td>${attendance[s.id]?"✅":"—"}</td><td>${s.taskResult?`${s.taskResult.score}/${s.taskResult.total}`:"—"}</td><td>${goal}</td><td>${mon}</td><td>${esc(s.teacherGrade||"—")}</td></tr>`}).join("")}
+$("readKmj").onclick=async()=>{let f=$("kmjFile").files[0];if(!f)return alert("ҚМЖ файлын таңдаңыз");let fd=new FormData();fd.append("file",f);$("kmjStatus").textContent="ҚМЖ оқылуда...";try{let r=await fetch("/api/parse",{method:"POST",body:fd}),d=await r.json();let a=await fetch("/api/kmj/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:d.text,hint:$("kmjHint").value})}),j=await a.json();lesson=j.data||{};$("subject").value=lesson.subject||"";$("className").value=lesson.class_name||"";$("topic").value=lesson.topic||"";$("objective").value=lesson.learning_objective||"";$("lessonGoal").value=lesson.lesson_goal||"";$("kmjStatus").innerHTML=`✅ ҚМЖ талданды. Режим: <b>${j.mode}</b>`;$("foundTasks").innerHTML=(lesson.tasks||[]).map((t,i)=>`<div class="card"><b>${i+1}. ${esc(t.title||"Тапсырма")}</b><br>${esc(t.question||"")}<br><span class="muted">Дескриптор: ${esc(t.descriptor||"")}</span></div>`).join("")||"Тапсырма табылмады.";renderLesson()}catch(e){$("kmjStatus").textContent="❌ "+e.message}};
+$("startLesson").onclick=()=>{lesson.subject=$("subject").value;lesson.class_name=$("className").value;lesson.topic=$("topic").value;lesson.learning_objective=$("objective").value;lesson.lesson_goal=$("lessonGoal").value;renderLesson();alert("Ағымдағы сабақ орнатылды.")};
+$("generateTasks").onclick=async()=>{try{let r=await fetch("/api/tasks/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson,format:$("taskFormat").value,instruction:$("taskInstruction").value})}),d=await r.json();generatedTasks=d.data.tasks||[];renderTaskPreview();$("publishInfo").textContent=`Тапсырма дайын. Режим: ${d.mode}`;}catch(e){$("publishInfo").textContent="❌ "+e.message}};
+function renderTaskPreview(){$("taskPreview").innerHTML=generatedTasks.map(t=>`<div class="card"><b>${t.id}. ${esc(t.question)}</b><br><span class="muted">Түрі: ${esc(t.type)} • Дескриптор: ${esc(t.descriptor)}</span></div>`).join("")||"Тапсырма жоқ."}
+$("publishTasks").onclick=async()=>{if(!generatedTasks.length)return alert("Алдымен тапсырма жасаңыз");let r=await fetch("/api/lesson/publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subject:lesson.subject||"",class_name:lesson.class_name||"",topic:lesson.topic||"",learning_objective:lesson.learning_objective||"",tasks:generatedTasks})}),d=await r.json();publishedCode=d.code;$("publishInfo").innerHTML=`✅ Жарияланды. Код: <b>${d.code}</b><br>Оқушы сілтемесі: ${location.origin}/?lesson=${d.code}`};
+$("addStudent").onclick=()=>{let n=$("newStudent").value.trim();if(n){students.push({name:n});$("newStudent").value="";renderStudents()}};
+$("clearClass").onclick=()=>{if(confirm("Тізімді тазалау керек пе?")){students=[];attendance={};renderStudents()}};
+$("importClass").onclick=async()=>{let f=$("classFile").files[0];if(!f)return alert("Файл таңдаңыз");let fd=new FormData();fd.append("file",f);let r=await fetch("/api/import-class",{method:"POST",body:fd}),d=await r.json();students=d.students.map(name=>({name}));attendance={};$("classStatus").textContent=d.message;renderStudents()};
+$("startQr").onclick=async()=>{let r=await fetch("/api/session/start",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({class_name:$("qrClass").value,topic:$("qrTopic").value,minutes:Number($("qrMinutes").value)})}),d=await r.json();if(!r.ok)return $("qrInfo").textContent="❌ "+(d.detail||"Қате");qrToken=d.token;$("qrBox").innerHTML=`<img src="/api/session/${qrToken}/qr.png?base=${encodeURIComponent(location.origin)}"><div><b>Код:</b> ${qrToken}</div>`;$("qrInfo").innerHTML=`${esc(d.class_name)} • ${esc(d.topic)} • ${new Date(d.expires_at).toLocaleTimeString("kk-KZ")}`;pollQr()};
+$("stopQr").onclick=async()=>{if(qrToken)await fetch("/api/session/stop/"+qrToken,{method:"POST"});clearInterval(qrPoll);$("qrBox").innerHTML="";$("qrInfo").textContent="Сабақ аяқталды."};
+function pollQr(){clearInterval(qrPoll);qrPoll=setInterval(async()=>{let r=await fetch("/api/session/"+qrToken+"/attendance");if(!r.ok)return;let d=await r.json();(d.attendance||[]).forEach(a=>{let s=a.student_id?students.find(x=>x.id.toLowerCase()===a.student_id.toLowerCase()):students.find(x=>x.name.toLowerCase()===a.name.toLowerCase());if(s)attendance[s.id]={time:a.time}});$("attendanceList").innerHTML=(d.attendance||[]).map(a=>`<div class="ok">${esc(a.student_id)} ${esc(a.name)} — ${esc(a.time)}</div>`).join("");renderStudents()},3000)}
+let stream=null,camTimer=null,camSeconds=0,motionSamples=[],prevFrame=null;
+$("cameraStart").onclick=async()=>{try{stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});$("video").srcObject=stream;camSeconds=0;motionSamples=[];camTimer=setInterval(sampleMotion,1000)}catch(e){alert("Камера ашылмады: "+e.message)}};
+function sampleMotion(){camSeconds++;$("cameraTime").textContent=camSeconds+" сек";let c=$("motionCanvas"),ctx=c.getContext("2d");ctx.drawImage($("video"),0,0,c.width,c.height);let d=ctx.getImageData(0,0,c.width,c.height).data,gray=[];for(let i=0;i<d.length;i+=16)gray.push((d[i]+d[i+1]+d[i+2])/3);let motion=0;if(prevFrame){let sum=0;for(let i=0;i<gray.length;i++)sum+=Math.abs(gray[i]-prevFrame[i]);motion=Math.min(100,Math.round(sum/gray.length/1.2))}prevFrame=gray;motionSamples.push(motion);$("motionText").textContent=motion+"%";$("motionBar").style.width=motion+"%";let s=students[Number($("monitorStudent").value)];if(s){s.monitor={seconds:camSeconds,motion:Math.round(motionSamples.reduce((a,b)=>a+b,0)/motionSamples.length)};save();renderJournal()}}
+$("cameraStop").onclick=()=>{clearInterval(camTimer);stream?.getTracks().forEach(t=>t.stop());stream=null};
+let recognition=null;
+$("speechStart").onclick=()=>{let SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return $("speechStatus").textContent="Бұл браузер Speech Recognition қолдамайды. Chrome/Edge қолданыңыз.";recognition=new SR();recognition.lang="kk-KZ";recognition.continuous=true;recognition.interimResults=true;recognition.onresult=e=>{let txt="";for(let i=0;i<e.results.length;i++)txt+=e.results[i][0].transcript+" ";$("transcript").value=txt};recognition.onerror=e=>$("speechStatus").textContent="❌ "+e.error;recognition.start();$("speechStatus").textContent="🎙️ Тыңдап тұр..."};
+$("speechStop").onclick=()=>{recognition?.stop();$("speechStatus").textContent="Тыңдау тоқтады."};
+$("saveOral").onclick=()=>{let s=students[Number($("oralStudent").value)];if(s){s.oral=$("transcript").value.trim();save();renderStudents();$("speechStatus").textContent="✅ Жауап сақталды."}};
+$("analyzeStudent").onclick=()=>{let s=students[Number($("analysisStudent").value)];if(!s)return;let pct=s.taskResult&&s.taskResult.total?Math.round(s.taskResult.score/s.taskResult.total*100):null;let goal=pct===null?"Тапсырма нәтижесі жоқ":pct>=80?"Оқу мақсатына жетті":pct>=50?"Оқу мақсатына жартылай жетті":"Қосымша қолдау қажет";$("studentAnalysis").innerHTML=`<b>${esc(s.id)} — ${esc(s.name)}</b><br>Қатысу: ${attendance[s.id]?"✅":"—"}<br>Тапсырма: ${pct===null?"—":pct+"%"}<br>🎯 ${goal}<br>🎙️ Ауызша жауап: ${s.oral?esc(s.oral):"жоқ"}<br>📹 Камера сигналы: ${s.monitor?`${s.monitor.seconds} сек, қозғалыс ${s.monitor.motion}%`:"жоқ"}<br><span class="muted">Камера сигналы зейін/эмоцияны анықтамайды және бағаға автоматты қосылмайды.</span>`};
+$("exportCsv").onclick=()=>{let rows=[["Оқушы","ID","Қатысу","Тапсырма","Ауызша жауап","Мониторинг","Мұғалім бағасы"],...students.map(s=>[s.name,s.id,attendance[s.id]?"Иә":"",s.taskResult?`${s.taskResult.score}/${s.taskResult.total}`:"",s.oral||"",s.monitor?`${s.monitor.seconds} сек; ${s.monitor.motion}%`:"",s.teacherGrade||""])];let csv="\ufeff"+rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="ai_mugalim_journal.csv";a.click()};
+async function initStudentPages(){let p=new URLSearchParams(location.search),lc=p.get("lesson"),sc=p.get("session");if(lc){$("studentTaskScreen").style.display="block";let r=await fetch("/api/lesson/"+lc),d=await r.json();$("studentTaskTitle").textContent=`${d.topic} • ${d.learning_objective}`;$("studentTasks").innerHTML=(d.tasks||[]).map(t=>`<div class="card"><b>${t.id}. ${esc(t.question)}</b>${t.options?.length?`<select data-task="${t.id}"><option></option>${t.options.map(o=>`<option>${esc(o)}</option>`).join("")}</select>`:`<input data-task="${t.id}" placeholder="Жауап">`}</div>`).join("");$("submitStudentTasks").onclick=async()=>{let answers={};document.querySelectorAll("[data-task]").forEach(x=>answers[x.dataset.task]=x.value);let rr=await fetch("/api/lesson/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code:lc,student_id:$("studentTaskId").value,name:$("studentTaskName").value,answers})}),res=await rr.json();$("studentTaskResult").innerHTML=`Нәтиже: <b>${res.score}/${res.total}</b>`}}if(sc){$("joinScreen").style.display="block";let r=await fetch("/api/session/"+sc),d=await r.json();$("joinLesson").innerHTML=`${esc(d.class_name)} • ${esc(d.topic)}`;$("joinClass").value=d.class_name;$("joinBtn").onclick=async()=>{let rr=await fetch("/api/checkin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:sc,student_id:$("joinId").value,name:$("joinName").value,class_name:$("joinClass").value})}),res=await rr.json();$("joinStatus").textContent=rr.ok?"✅ Қатысу тіркелді: "+res.time:"❌ "+res.detail}}}
+tabs();$("subject").value=lesson.subject||"";$("className").value=lesson.class_name||"";$("topic").value=lesson.topic||"";$("objective").value=lesson.learning_objective||"";$("lessonGoal").value=lesson.lesson_goal||"";renderLesson();renderStudents();initStudentPages();
+</script></body></html>
