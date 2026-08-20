@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://ai-mugalim-k.onrender.com/sitemap.xml

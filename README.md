@@ -1,18 +1,30 @@
-# ZEREK Education — 3 тіл + рұқсатпен кіру
+# ZEREK AI Мұғалім көмекшісі — FINAL
 
-Қосылды:
-- Қазақша / Русский / English тіл ауыстырғыш
-- Email + құпиясөз арқылы тіркелу
-- Жаңа аккаунт `pending`
-- Тек admin мақұлдағаннан кейін кіру
-- Admin панелі: рұқсат беру / бас тарту
-- Қауіпсіз PBKDF2 пароль хэші және signed session cookie
+Бір пакетте:
+- Desktop + responsive Mobile
+- PWA / басты экранға орнату
+- ZEREK favicon / SEO / sitemap / robots
+- Қазақша / Русский / English
+- Email тіркелу, admin approval
+- Gemini + OpenAI + retry/fallback
+- ҚМЖ талдау, ҚМЖ суреттері
+- HTML тапсырма, жауап тексеру
+- QR қатысу
+- сынып / Excel CSV импорт
+- сабақ мониторингі
+- ауызша жауап
+- жеке AI талдау
+- журнал
+- топқа бөлу әдістері
+- топтық жұмыс / экран режимі / сыртқы ресурстар
+- PNG / print-PDF
+- дизайнерлік парақ
+- фото үлгісін Gemini/OpenAI Vision арқылы талдау
 
-Render Environment Variables міндетті:
-- `ADMIN_EMAIL` = сіздің әкімші email
-- `ADMIN_PASSWORD` = әкімші құпиясөзі
-- `SESSION_SECRET` = ұзын кездейсоқ құпия жол
+Render Environment:
+GEMINI_API_KEY, GEMINI_MODEL
+OPENAI_API_KEY, OPENAI_MODEL
+ADMIN_EMAIL, ADMIN_PASSWORD, SESSION_SECRET
 
-Маңызды:
-Бұл нұсқа SQLite қолданады. Render-дің ephemeral filesystem режимінде база restart/deploy кезінде жоғалуы мүмкін.
-Тұрақты production үшін PostgreSQL/Firebase сияқты тұрақты базаға көшіру керек.
+ЕСКЕРТУ: users.db Render Free ephemeral filesystem-де deploy/restart кезінде жоғалуы мүмкін.
+Тұрақты пайдаланушы базасы үшін келесі production қадам — PostgreSQL.
