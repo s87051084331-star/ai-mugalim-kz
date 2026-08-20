@@ -68,6 +68,32 @@ def init_db():
               created_at TIMESTAMPTZ DEFAULT NOW(),
               updated_at TIMESTAMPTZ DEFAULT NOW()
             )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS kmj_tasks(
+              id BIGSERIAL PRIMARY KEY,
+              user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+              archive_id BIGINT REFERENCES lesson_archive(id) ON DELETE SET NULL,
+              stage TEXT DEFAULT '',
+              work_type TEXT DEFAULT 'individual',
+              title TEXT NOT NULL,
+              task_text TEXT NOT NULL,
+              minutes INTEGER DEFAULT 5,
+              points INTEGER DEFAULT 1,
+              descriptor TEXT DEFAULT '',
+              assessment TEXT DEFAULT '',
+              resource_name TEXT DEFAULT '',
+              resource_text TEXT DEFAULT '',
+              created_at TIMESTAMPTZ DEFAULT NOW()
+            )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS payment_requests(
+              id BIGSERIAL PRIMARY KEY,
+              user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+              package_code TEXT NOT NULL,
+              amount_kzt INTEGER NOT NULL,
+              status TEXT NOT NULL DEFAULT 'pending',
+              note TEXT DEFAULT '',
+              created_at TIMESTAMPTZ DEFAULT NOW(),
+              approved_at TIMESTAMPTZ
+            )""")
             cur.execute("""CREATE TABLE IF NOT EXISTS teacher_resources(
               id BIGSERIAL PRIMARY KEY,
               user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -335,6 +361,134 @@ def resources_list(request:Request):
     with db() as c:
         with c.cursor() as cur:cur.execute("SELECT * FROM teacher_resources WHERE user_id=%s ORDER BY id DESC",(u["id"],));rows=cur.fetchall()
     return {"items":rows}
+
+
+
+class KmjTaskBody(BaseModel):
+    stage:str=""
+    work_type:str="individual"
+    title:str
+    task_text:str
+    minutes:int=5
+    points:int=1
+    descriptor:str=""
+    assessment:str=""
+    resource_name:str=""
+    resource_text:str=""
+
+class PaymentRequestBody(BaseModel):
+    package_code:str
+    note:str=""
+
+class PaymentApproveBody(BaseModel):
+    payment_id:int
+    approve:bool
+
+PACKAGE_CATALOG={
+ "standard":{"name":"Standard","amount_kzt":2990,"openai_add":200,"gemini_add":100,"credits_add":200},
+ "pro":{"name":"Pro","amount_kzt":6990,"openai_add":1000,"gemini_add":500,"credits_add":1200},
+ "openai100":{"name":"OpenAI +100","amount_kzt":1490,"openai_add":100,"gemini_add":0,"credits_add":0},
+ "gemini100":{"name":"Gemini +100","amount_kzt":990,"openai_add":0,"gemini_add":100,"credits_add":0}
+}
+
+@app.post("/api/kmj/tasks")
+def kmj_task_add(body:KmjTaskBody,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""INSERT INTO kmj_tasks(user_id,stage,work_type,title,task_text,minutes,points,descriptor,assessment,resource_name,resource_text)
+              VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
+              (u["id"],body.stage,body.work_type,body.title,body.task_text,max(1,body.minutes),max(0,body.points),body.descriptor,body.assessment,body.resource_name,body.resource_text))
+            rid=cur.fetchone()["id"]
+    return {"ok":True,"id":rid}
+
+@app.get("/api/kmj/tasks")
+def kmj_tasks(request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:cur.execute("SELECT * FROM kmj_tasks WHERE user_id=%s ORDER BY id DESC",(u["id"],));rows=cur.fetchall()
+    return {"items":rows}
+
+@app.delete("/api/kmj/tasks/{task_id}")
+def kmj_task_delete(task_id:int,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:cur.execute("DELETE FROM kmj_tasks WHERE id=%s AND user_id=%s",(task_id,u["id"]))
+    return {"ok":True}
+
+@app.get("/api/packages")
+def packages(request:Request):
+    auth_user(request)
+    return {"packages":[{"code":k,**v} for k,v in PACKAGE_CATALOG.items()]}
+
+@app.post("/api/payments/request")
+def payment_request(body:PaymentRequestBody,request:Request):
+    u=auth_user(request);p=PACKAGE_CATALOG.get(body.package_code)
+    if not p:raise HTTPException(400,"Пакет табылмады.")
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""INSERT INTO payment_requests(user_id,package_code,amount_kzt,note)
+              VALUES(%s,%s,%s,%s) RETURNING id""",(u["id"],body.package_code,p["amount_kzt"],body.note));pid=cur.fetchone()["id"]
+    return {"ok":True,"payment_id":pid,"status":"pending","amount_kzt":p["amount_kzt"]}
+
+@app.get("/api/payments/mine")
+def my_payments(request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:cur.execute("SELECT * FROM payment_requests WHERE user_id=%s ORDER BY id DESC",(u["id"],));rows=cur.fetchall()
+    return {"items":rows}
+
+@app.get("/api/admin/payments")
+def admin_payments(request:Request):
+    require_admin(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""SELECT p.*,u.email,u.name FROM payment_requests p JOIN users u ON u.id=p.user_id ORDER BY p.id DESC""");rows=cur.fetchall()
+    return {"items":rows}
+
+@app.post("/api/admin/payments/approve")
+def admin_payment_approve(body:PaymentApproveBody,request:Request):
+    require_admin(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("SELECT * FROM payment_requests WHERE id=%s FOR UPDATE",(body.payment_id,));pay=cur.fetchone()
+            if not pay:raise HTTPException(404,"Төлем сұранысы табылмады.")
+            if pay["status"]!="pending":return {"ok":True,"status":pay["status"]}
+            if not body.approve:
+                cur.execute("UPDATE payment_requests SET status='rejected',approved_at=NOW() WHERE id=%s",(body.payment_id,))
+                return {"ok":True,"status":"rejected"}
+            p=PACKAGE_CATALOG.get(pay["package_code"])
+            if not p:raise HTTPException(400,"Пакет конфигурациясы жоқ.")
+            cur.execute("""UPDATE users SET openai_limit=openai_limit+%s,gemini_limit=gemini_limit+%s,credits=credits+%s,
+              plan=CASE WHEN %s IN ('standard','pro') THEN %s ELSE plan END WHERE id=%s""",
+              (p["openai_add"],p["gemini_add"],p["credits_add"],pay["package_code"],pay["package_code"],pay["user_id"]))
+            cur.execute("UPDATE payment_requests SET status='approved',approved_at=NOW() WHERE id=%s",(body.payment_id,))
+    return {"ok":True,"status":"approved"}
+
+
+
+@app.post("/api/kmj/export-docx")
+def export_kmj_docx(body:ArchiveSaveBody,request:Request):
+    auth_user(request)
+    from docx import Document
+    from docx.shared import Pt
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    import tempfile
+    k=body.kmj
+    d=Document()
+    h=d.add_paragraph();h.alignment=WD_ALIGN_PARAGRAPH.CENTER
+    r=h.add_run("Қысқа мерзімді жоспар");r.bold=True;r.font.size=Pt(16)
+    for label,key in [("Пән","subject"),("Сынып","class_name"),("Бөлім","section"),("Сабақ тақырыбы","topic"),("Оқу мақсаты","learning_objective"),("Сабақ мақсаты","lesson_goal"),("Құндылық","value"),("Аптаның дәйексөзі","weekly_quote")]:
+        p=d.add_paragraph();p.add_run(label+": ").bold=True;p.add_run(str(k.get(key,"")))
+    table=d.add_table(rows=1,cols=5);table.style="Table Grid"
+    heads=["Сабақтың кезеңі / Уақыт","Педагогтің іс-әрекеті","Оқушының іс-әрекеті","Бағалау","Ресурстар"]
+    for i,x in enumerate(heads):table.rows[0].cells[i].text=x
+    for row in k.get("rows",[]):
+        c=table.add_row().cells
+        c[0].text=f'{row.get("stage","")} / {row.get("minutes","")} мин'
+        c[1].text=str(row.get("teacher_action",""));c[2].text=str(row.get("student_action",""));c[3].text=str(row.get("assessment",""));c[4].text=str(row.get("resources",""))
+    path=BASE/f"kmj_{secrets.token_hex(5)}.docx";d.save(path)
+    return FileResponse(path,filename="ZEREK_KMJ.docx",media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
 
 # ---------------- File parsing ----------------
