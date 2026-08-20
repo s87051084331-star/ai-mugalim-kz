@@ -13,65 +13,330 @@ app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", sec
 BASE = Path(__file__).parent
 
 
-# ---------------- Access control ----------------
-DB_PATH=os.getenv("AUTH_DB_PATH", str(BASE/"users.db"))
+# ---------------- PostgreSQL persistent access control ----------------
+DATABASE_URL=os.getenv("DATABASE_URL","").strip()
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is required. Add Render Postgres Internal Database URL to Environment Variables.")
+
+import psycopg
+from psycopg.rows import dict_row
+
 def db():
-    c=sqlite3.connect(DB_PATH);c.row_factory=sqlite3.Row;return c
+    return psycopg.connect(DATABASE_URL, row_factory=dict_row)
+
 def hash_password(password,salt=None):
     salt=salt or secrets.token_hex(16)
     dk=hashlib.pbkdf2_hmac("sha256",password.encode(),salt.encode(),200000)
     return salt+"$"+dk.hex()
+
 def verify_password(password,stored):
     try:
         salt,digest=stored.split("$",1)
         return hmac.compare_digest(hash_password(password,salt).split("$",1)[1],digest)
     except Exception:return False
-def init_auth():
-    c=db();c.execute("""CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT UNIQUE NOT NULL,name TEXT NOT NULL,password_hash TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',role TEXT NOT NULL DEFAULT 'teacher',created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
-    ae=os.getenv("ADMIN_EMAIL","").strip().lower();ap=os.getenv("ADMIN_PASSWORD","").strip()
-    if ae and ap:
-        row=c.execute("SELECT id FROM users WHERE email=?",(ae,)).fetchone()
-        if row:c.execute("UPDATE users SET role='admin',status='approved' WHERE email=?",(ae,))
-        else:c.execute("INSERT INTO users(email,name,password_hash,status,role) VALUES(?,?,?,?,?)",(ae,"Administrator",hash_password(ap),"approved","admin"))
-    c.commit();c.close()
-init_auth()
+
+def init_db():
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""CREATE TABLE IF NOT EXISTS users(
+              id BIGSERIAL PRIMARY KEY,
+              email TEXT UNIQUE NOT NULL,
+              name TEXT NOT NULL,
+              password_hash TEXT NOT NULL,
+              status TEXT NOT NULL DEFAULT 'pending',
+              role TEXT NOT NULL DEFAULT 'teacher',
+              plan TEXT NOT NULL DEFAULT 'free',
+              subscription_until TIMESTAMPTZ,
+              openai_limit INTEGER NOT NULL DEFAULT 10,
+              openai_used INTEGER NOT NULL DEFAULT 0,
+              gemini_limit INTEGER NOT NULL DEFAULT 10,
+              gemini_used INTEGER NOT NULL DEFAULT 0,
+              usage_date DATE DEFAULT CURRENT_DATE,
+              ai_provider TEXT NOT NULL DEFAULT 'auto',
+              credits INTEGER NOT NULL DEFAULT 0,
+              created_at TIMESTAMPTZ DEFAULT NOW()
+            )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS lesson_archive(
+              id BIGSERIAL PRIMARY KEY,
+              user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+              title TEXT NOT NULL,
+              subject TEXT DEFAULT '',
+              class_name TEXT DEFAULT '',
+              topic TEXT DEFAULT '',
+              learning_objective TEXT DEFAULT '',
+              kmj_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+              created_at TIMESTAMPTZ DEFAULT NOW(),
+              updated_at TIMESTAMPTZ DEFAULT NOW()
+            )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS teacher_resources(
+              id BIGSERIAL PRIMARY KEY,
+              user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+              name TEXT NOT NULL,
+              resource_type TEXT DEFAULT 'link',
+              url TEXT DEFAULT '',
+              note TEXT DEFAULT '',
+              created_at TIMESTAMPTZ DEFAULT NOW()
+            )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS ai_usage(
+              id BIGSERIAL PRIMARY KEY,
+              user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+              provider TEXT NOT NULL,
+              feature TEXT NOT NULL DEFAULT 'general',
+              units INTEGER NOT NULL DEFAULT 1,
+              created_at TIMESTAMPTZ DEFAULT NOW()
+            )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS plans(
+              code TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              openai_limit INTEGER NOT NULL,
+              gemini_limit INTEGER NOT NULL,
+              credits INTEGER NOT NULL DEFAULT 0
+            )""")
+            cur.executemany("""INSERT INTO plans(code,name,openai_limit,gemini_limit,credits)
+              VALUES(%s,%s,%s,%s,%s) ON CONFLICT(code) DO UPDATE SET
+              name=EXCLUDED.name,openai_limit=EXCLUDED.openai_limit,gemini_limit=EXCLUDED.gemini_limit,credits=EXCLUDED.credits""",[
+              ("free","Free",10,10,0),("standard","Standard",200,100,200),("pro","Pro",1000,500,1200)
+            ])
+            ae=os.getenv("ADMIN_EMAIL","").strip().lower();ap=os.getenv("ADMIN_PASSWORD","").strip()
+            if ae and ap:
+                cur.execute("SELECT id FROM users WHERE email=%s",(ae,));u=cur.fetchone()
+                if u:cur.execute("UPDATE users SET role='admin',status='approved' WHERE email=%s",(ae,))
+                else:cur.execute("INSERT INTO users(email,name,password_hash,status,role,plan,openai_limit,gemini_limit) VALUES(%s,%s,%s,'approved','admin','pro',10000,10000)",(ae,"Administrator",hash_password(ap)))
+init_db()
+
+def reset_usage(u):
+    if str(u.get("usage_date")) != datetime.now().strftime("%Y-%m-%d"):
+        with db() as c:
+            with c.cursor() as cur:cur.execute("UPDATE users SET openai_used=0,gemini_used=0,usage_date=CURRENT_DATE WHERE id=%s",(u["id"],))
+        u=dict(u);u["openai_used"]=0;u["gemini_used"]=0;u["usage_date"]=datetime.now().date()
+    return dict(u)
+
+def auth_user(request:Request):
+    uid=request.session.get("uid")
+    if not uid:raise HTTPException(401,"Кіру қажет.")
+    with db() as c:
+        with c.cursor() as cur:cur.execute("SELECT * FROM users WHERE id=%s",(uid,));u=cur.fetchone()
+    if not u or u["status"]!="approved":raise HTTPException(403,"Рұқсат жоқ.")
+    return reset_usage(u)
+
 class RegisterBody(BaseModel): email:str; name:str; password:str
 class LoginBody(BaseModel): email:str; password:str
 class ApprovalBody(BaseModel): user_id:int; approve:bool
+class AiPrefBody(BaseModel): provider:str="auto"
+class UserPlanBody(BaseModel): user_id:int; plan:str
+class ProviderLimitBody(BaseModel): user_id:int; openai_limit:int; gemini_limit:int
+
 @app.post("/api/auth/register")
 def register(body:RegisterBody):
     email=body.email.strip().lower()
     if "@" not in email or len(body.password)<6 or not body.name.strip():raise HTTPException(400,"Email, аты-жөні және кемінде 6 таңбалы құпиясөз қажет.")
-    c=db()
-    try:c.execute("INSERT INTO users(email,name,password_hash,status,role) VALUES(?,?,?,?,?)",(email,body.name.strip(),hash_password(body.password),"pending","teacher"));c.commit()
-    except sqlite3.IntegrityError:raise HTTPException(409,"Бұл email бұрын тіркелген.")
-    finally:c.close()
+    try:
+        with db() as c:
+            with c.cursor() as cur:cur.execute("INSERT INTO users(email,name,password_hash) VALUES(%s,%s,%s)",(email,body.name.strip(),hash_password(body.password)))
+    except psycopg.errors.UniqueViolation:raise HTTPException(409,"Бұл email бұрын тіркелген.")
     return {"ok":True,"status":"pending"}
+
 @app.post("/api/auth/login")
 def login(body:LoginBody,request:Request):
-    c=db();u=c.execute("SELECT * FROM users WHERE email=?",(body.email.strip().lower(),)).fetchone();c.close()
+    with db() as c:
+        with c.cursor() as cur:cur.execute("SELECT * FROM users WHERE email=%s",(body.email.strip().lower(),));u=cur.fetchone()
     if not u or not verify_password(body.password,u["password_hash"]):raise HTTPException(401,"Email немесе құпиясөз қате.")
     if u["status"]!="approved":raise HTTPException(403,"Аккаунт әлі әкімші тарапынан мақұлданбаған.")
     request.session["uid"]=u["id"];return {"ok":True,"user":{"id":u["id"],"email":u["email"],"name":u["name"],"role":u["role"]}}
+
 @app.post("/api/auth/logout")
 def logout(request:Request):request.session.clear();return {"ok":True}
+
 @app.get("/api/auth/me")
 def me(request:Request):
-    uid=request.session.get("uid")
-    if not uid:return {"authenticated":False}
-    c=db();u=c.execute("SELECT id,email,name,status,role FROM users WHERE id=?",(uid,)).fetchone();c.close()
-    return {"authenticated":bool(u and u["status"]=="approved"),"user":dict(u) if u and u["status"]=="approved" else None}
+    try:u=auth_user(request)
+    except HTTPException:return {"authenticated":False}
+    return {"authenticated":True,"user":{"id":u["id"],"email":u["email"],"name":u["name"],"role":u["role"],"plan":u["plan"]}}
+
 def require_admin(request):
-    uid=request.session.get("uid")
-    if not uid:raise HTTPException(401,"Кіру қажет.")
-    c=db();u=c.execute("SELECT role,status FROM users WHERE id=?",(uid,)).fetchone();c.close()
-    if not u or u["role"]!="admin" or u["status"]!="approved":raise HTTPException(403,"Әкімші рұқсаты қажет.")
+    u=auth_user(request)
+    if u["role"]!="admin":raise HTTPException(403,"Әкімші рұқсаты қажет.")
+    return u
+
+@app.get("/api/user/ai-settings")
+def user_ai_settings(request:Request):
+    u=auth_user(request)
+    return {"provider":u["ai_provider"],"plan":u["plan"],"credits":u["credits"],
+      "openai":{"used":u["openai_used"],"limit":u["openai_limit"]},
+      "gemini":{"used":u["gemini_used"],"limit":u["gemini_limit"]}}
+
+@app.post("/api/user/ai-settings")
+def user_ai_save(body:AiPrefBody,request:Request):
+    u=auth_user(request);p=body.provider if body.provider in ("auto","gemini","openai") else "auto"
+    with db() as c:
+        with c.cursor() as cur:cur.execute("UPDATE users SET ai_provider=%s WHERE id=%s",(p,u["id"]))
+    return {"ok":True}
+
 @app.get("/api/admin/users")
 def admin_users(request:Request):
-    require_admin(request);c=db();rows=c.execute("SELECT id,email,name,status,role,created_at FROM users ORDER BY id DESC").fetchall();c.close();return {"users":[dict(r) for r in rows]}
+    require_admin(request)
+    with db() as c:
+        with c.cursor() as cur:cur.execute("""SELECT id,email,name,status,role,plan,subscription_until,openai_limit,openai_used,gemini_limit,gemini_used,credits,created_at FROM users ORDER BY id DESC""");rows=cur.fetchall()
+    return {"users":rows}
+
 @app.post("/api/admin/approve")
 def admin_approve(body:ApprovalBody,request:Request):
-    require_admin(request);c=db();c.execute("UPDATE users SET status=? WHERE id=?",("approved" if body.approve else "rejected",body.user_id));c.commit();c.close();return {"ok":True}
+    require_admin(request)
+    with db() as c:
+        with c.cursor() as cur:cur.execute("UPDATE users SET status=%s WHERE id=%s",("approved" if body.approve else "rejected",body.user_id))
+    return {"ok":True}
+
+@app.post("/api/admin/user-plan")
+def admin_plan(body:UserPlanBody,request:Request):
+    require_admin(request);code=body.plan if body.plan in ("free","standard","pro") else "free"
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("SELECT * FROM plans WHERE code=%s",(code,));p=cur.fetchone()
+            cur.execute("""UPDATE users SET plan=%s,openai_limit=%s,gemini_limit=%s,credits=%s,
+              openai_used=0,gemini_used=0,usage_date=CURRENT_DATE WHERE id=%s""",
+              (code,p["openai_limit"],p["gemini_limit"],p["credits"],body.user_id))
+    return {"ok":True}
+
+@app.post("/api/admin/provider-limits")
+def admin_provider_limits(body:ProviderLimitBody,request:Request):
+    require_admin(request)
+    with db() as c:
+        with c.cursor() as cur:cur.execute("UPDATE users SET openai_limit=%s,gemini_limit=%s WHERE id=%s",(max(0,body.openai_limit),max(0,body.gemini_limit),body.user_id))
+    return {"ok":True}
+
+def charge_provider(user_id,provider,feature="general"):
+    col="openai_used" if provider=="openai" else "gemini_used"
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute(f"UPDATE users SET {col}={col}+1 WHERE id=%s",(user_id,))
+            cur.execute("INSERT INTO ai_usage(user_id,provider,feature,units) VALUES(%s,%s,%s,1)",(user_id,provider,feature))
+
+@app.get("/api/admin/usage")
+def admin_usage(request:Request):
+    require_admin(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""SELECT u.email,a.provider,a.feature,COUNT(*) AS uses,MAX(a.created_at) AS last_used
+              FROM ai_usage a JOIN users u ON u.id=a.user_id GROUP BY u.email,a.provider,a.feature ORDER BY last_used DESC LIMIT 500""")
+            rows=cur.fetchall()
+    return {"usage":rows}
+
+
+class KmjGenerateBody(BaseModel):
+    subject:str=""
+    class_name:str=""
+    section:str=""
+    topic:str=""
+    learning_objective:str=""
+    lesson_goal:str=""
+    duration:int=45
+    value:str=""
+    weekly_quote:str=""
+    resources:list=[]
+    extra_instruction:str=""
+    provider:str="auto"
+
+class ArchiveSaveBody(BaseModel):
+    title:str
+    subject:str=""
+    class_name:str=""
+    topic:str=""
+    learning_objective:str=""
+    kmj:dict
+
+class ResourceBody(BaseModel):
+    name:str
+    resource_type:str="link"
+    url:str=""
+    note:str=""
+
+@app.post("/api/kmj/generate130")
+async def generate_kmj130(body:KmjGenerateBody,request:Request):
+    u=auth_user(request)
+    prompt=f"""Қазақстан мұғаліміне ҚМЖ жобасын жаса.
+Кесте құрылымы міндетті түрде 5 бағаннан тұрады:
+1) Сабақтың кезеңі / Уақыт
+2) Педагогтің іс-әрекеті
+3) Оқушының іс-әрекеті
+4) Бағалау
+5) Ресурстар.
+Жоғарғы мәліметтер: пән, сынып, бөлім, сабақ тақырыбы, оқу мақсаты, сабақ мақсаты.
+Құндылық және Аптаның дәйексөзі — мұғалім енгізген мәтінді өзгеріссіз сақта.
+Мұғалім берген ресурстарды орынды кезеңдерге орналастыр, бірақ жаңа URL ойдан шығарма.
+Тек JSON қайтар:
+{{"subject":"","class_name":"","section":"","topic":"","learning_objective":"","lesson_goal":"",
+"value":"","weekly_quote":"","duration":45,
+"rows":[{{"stage":"","minutes":0,"teacher_action":"","student_action":"","assessment":"","resources":""}}]}}
+Дерек:
+Пән: {body.subject}
+Сынып: {body.class_name}
+Бөлім: {body.section}
+Тақырып: {body.topic}
+Оқу мақсаты: {body.learning_objective}
+Сабақ мақсаты: {body.lesson_goal}
+Ұзақтығы: {body.duration}
+Құндылық: {body.value}
+Аптаның дәйексөзі: {body.weekly_quote}
+Ресурстар: {json.dumps(body.resources,ensure_ascii=False)}
+Қосымша нұсқау: {body.extra_instruction}
+"""
+    ai=await ai_json(body.provider,prompt,u,"kmj_generate130")
+    data=ai["data"]
+    return {"ok":True,"mode":ai["provider_used"],"fallback":ai["fallback"],"data":data}
+
+@app.post("/api/archive/save")
+def archive_save(body:ArchiveSaveBody,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""INSERT INTO lesson_archive(user_id,title,subject,class_name,topic,learning_objective,kmj_json)
+              VALUES(%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
+              (u["id"],body.title,body.subject,body.class_name,body.topic,body.learning_objective,json.dumps(body.kmj,ensure_ascii=False)))
+            rid=cur.fetchone()["id"]
+    return {"ok":True,"id":rid}
+
+@app.get("/api/archive")
+def archive_list(request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""SELECT id,title,subject,class_name,topic,learning_objective,created_at,updated_at
+              FROM lesson_archive WHERE user_id=%s ORDER BY updated_at DESC""",(u["id"],));rows=cur.fetchall()
+    return {"items":rows}
+
+@app.get("/api/archive/{item_id}")
+def archive_get(item_id:int,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("SELECT * FROM lesson_archive WHERE id=%s AND user_id=%s",(item_id,u["id"]));row=cur.fetchone()
+    if not row:raise HTTPException(404,"Архив материалы табылмады.")
+    return {"item":row}
+
+@app.delete("/api/archive/{item_id}")
+def archive_delete(item_id:int,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:cur.execute("DELETE FROM lesson_archive WHERE id=%s AND user_id=%s",(item_id,u["id"]))
+    return {"ok":True}
+
+@app.post("/api/resources")
+def resource_add(body:ResourceBody,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""INSERT INTO teacher_resources(user_id,name,resource_type,url,note)
+              VALUES(%s,%s,%s,%s,%s) RETURNING id""",(u["id"],body.name,body.resource_type,body.url,body.note));rid=cur.fetchone()["id"]
+    return {"ok":True,"id":rid}
+
+@app.get("/api/resources")
+def resources_list(request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:cur.execute("SELECT * FROM teacher_resources WHERE user_id=%s ORDER BY id DESC",(u["id"],));rows=cur.fetchall()
+    return {"items":rows}
+
+
 # ---------------- File parsing ----------------
 def parse_file(name: str, data: bytes) -> str:
     ext = Path(name).suffix.lower()
@@ -281,24 +546,30 @@ async def _retry_ai(provider: str, prompt: str, attempts: int=3):
             if n<attempts-1: await asyncio.sleep(1.5*(2**n))
     return {"ok":False,"errors":errs}
 
-async def ai_json(provider: str, prompt: str):
-    requested=(provider or "gemini").lower()
-    if requested not in ("gemini","openai"): requested="gemini"
+async def ai_json(provider: str, prompt: str, user=None, feature="general"):
+    requested=(provider or "auto").lower()
+    if user:
+        user=reset_usage(user)
+        pref=(user.get("ai_provider") or "auto").lower()
+        if requested=="auto":requested=pref
+    if requested not in ("gemini","openai"):requested="openai"
     configured={"gemini":bool(os.getenv("GEMINI_API_KEY","").strip()),"openai":bool(os.getenv("OPENAI_API_KEY","").strip())}
-    other="openai" if requested=="gemini" else "gemini"
-    order=[requested]+([other] if configured[other] else [])
-    allerrs=[]
+    other="openai" if requested=="gemini" else "gemini";order=[requested]+([other] if configured[other] else [])
+    errs=[]
     for p in order:
-        if not configured[p]:
-            allerrs.append({"provider":p,"status":400,"message":"API key жоқ","attempt":0});continue
-        r=await _retry_ai(p,prompt,3);allerrs+=r["errors"]
+        if not configured[p]:continue
+        if user:
+            used=user[f"{p}_used"];limit=user[f"{p}_limit"]
+            if used>=limit:
+                errs.append({"provider":p,"status":429,"message":f"Жеке {p} лимиті аяқталды: {used}/{limit}"});continue
+        r=await _retry_ai(p,prompt,3);errs+=r["errors"]
         if r["ok"]:
+            if user:charge_provider(user["id"],p,feature)
             return {"provider_used":p,"requested_provider":requested,"fallback":p!=requested,"attempts":r["attempts"],"data":r["data"]}
     latest={}
-    for e in allerrs:latest[e["provider"]]=e
+    for e in errs:latest[e["provider"]]=e
     summary=" | ".join(f'{p}: HTTP {latest[p]["status"]} — {latest[p]["message"]}' for p in order if p in latest)
-    raise HTTPException(503,{"message":"AI провайдерлерінің екеуі де жауап бере алмады.","summary":summary,"errors":latest})
-
+    raise HTTPException(503,{"message":"Қолжетімді AI мүмкіндігі аяқталды немесе провайдер жауап бермеді.","summary":summary,"errors":latest})
 
 @app.get("/api/ai/diagnostics")
 def ai_diagnostics():
@@ -383,7 +654,7 @@ class KmjAnalyze(BaseModel):
     provider: str = "gemini"
 
 @app.post("/api/kmj/analyze")
-async def kmj_analyze(body: KmjAnalyze):
+async def kmj_analyze(body: KmjAnalyze, request:Request):
     prompt=f"""Сен Қазақстан мұғаліміне арналған AI көмекшісің. ҚМЖ мәтінін мұқият талда.
 Тек жарамды JSON қайтар: subject, class_name, topic, learning_objective, lesson_goal,
 tasks массиві: id, title, question, answer, descriptor, type.
@@ -392,7 +663,7 @@ tasks массиві: id, title, question, answer, descriptor, type.
 ҚМЖ:
 {body.text[:50000]}"""
     try:
-        ai=await ai_json(body.provider,prompt)
+        ai=await ai_json(body.provider,prompt,auth_user(request),'kmj_analyze')
         raw=ai["data"]
         data=normalize_lesson(raw)
         if not any([data["subject"],data["class_name"],data["topic"],data["learning_objective"],data["tasks"]]):
@@ -410,7 +681,7 @@ class TaskGenerate(BaseModel):
     provider: str = "gemini"
 
 @app.post("/api/tasks/generate")
-async def task_generate(body: TaskGenerate):
+async def task_generate(body: TaskGenerate, request:Request):
     prompt=f"""Сен мұғалім берген ҚМЖ негізінде интерактивті HTML тапсырма құрылымын дайындайсың.
 Формат: {body.format}
 Мұғалімнің міндетті ұсынысы: {body.instruction}
@@ -421,7 +692,7 @@ type тек test, match, fill, truefalse, short.
 ҚМЖ дерегі:
 {json.dumps(body.lesson,ensure_ascii=False)[:40000]}"""
     try:
-        ai=await ai_json(body.provider,prompt)
+        ai=await ai_json(body.provider,prompt,auth_user(request),'task_generate')
         raw=ai["data"]
         data=normalize_generated(raw)
         if not data["tasks"]:
@@ -438,7 +709,7 @@ class StudentAnalyze(BaseModel):
     student: dict
 
 @app.post("/api/student/analyze")
-async def student_analyze(body: StudentAnalyze):
+async def student_analyze(body: StudentAnalyze, request:Request):
     prompt=f"""Сен мұғалімге арналған көмекші AI-сің. Оқушыға баға қойма.
 Оқу мақсатына жетуін дәлелдермен талда және мұғалімге қысқа педагогикалық қорытынды бер.
 Камерадағы қозғалыс көрсеткішін зейін, эмоция немесе оқу жетістігі деп түсіндірме.
@@ -446,7 +717,7 @@ async def student_analyze(body: StudentAnalyze):
 Сабақ: {json.dumps(body.lesson,ensure_ascii=False)}
 Оқушы дерегі: {json.dumps(body.student,ensure_ascii=False)}
 """
-    ai=await ai_json(body.provider,prompt)
+    ai=await ai_json(body.provider,prompt,auth_user(request),'student_analyze')
     return {"mode":ai["provider_used"],"fallback":ai["fallback"],"data":ai["data"]}
 
 @app.post("/api/audio/transcribe")
