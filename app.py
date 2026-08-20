@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from pathlib import Path
 from datetime import datetime, timedelta
 from io import BytesIO
-import io, os, csv, re, json, secrets
+import io, os, csv, re, json, secrets, base64
 
 app = FastAPI(title="AI Мұғалім көмекшісі — ZEREK Education")
 BASE = Path(__file__).parent
@@ -53,6 +53,70 @@ def parse_file(name: str, data: bytes) -> str:
 async def parse(file: UploadFile = File(...)):
     data = await file.read()
     return {"message": f"{file.filename} өңделді", "text": parse_file(file.filename, data)}
+
+
+# ---------------- KMJ image extraction ----------------
+def _data_uri(blob: bytes, mime: str):
+    return "data:"+mime+";base64,"+base64.b64encode(blob).decode("ascii")
+
+def extract_images(name: str, data: bytes):
+    ext=Path(name).suffix.lower()
+    out=[]
+    try:
+        if ext==".docx":
+            import zipfile as _zf
+            with _zf.ZipFile(io.BytesIO(data)) as z:
+                for n in z.namelist():
+                    if n.startswith("word/media/"):
+                        b=z.read(n); suf=Path(n).suffix.lower()
+                        mime={".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".gif":"image/gif",".webp":"image/webp"}.get(suf,"application/octet-stream")
+                        out.append({"name":Path(n).name,"mime":mime,"data_url":_data_uri(b,mime),"source":"DOCX"})
+        elif ext==".pptx":
+            from pptx import Presentation
+            prs=Presentation(io.BytesIO(data))
+            seen=set()
+            for si,slide in enumerate(prs.slides,1):
+                for shape in slide.shapes:
+                    if hasattr(shape,"image"):
+                        b=shape.image.blob
+                        key=hash(b)
+                        if key in seen: continue
+                        seen.add(key)
+                        mime=shape.image.content_type or "image/png"
+                        out.append({"name":f"slide-{si}-{shape.image.filename}","mime":mime,"data_url":_data_uri(b,mime),"source":f"PPTX {si}-слайд"})
+        elif ext==".xlsx":
+            from openpyxl import load_workbook
+            wb=load_workbook(io.BytesIO(data))
+            for ws in wb.worksheets:
+                for i,img in enumerate(getattr(ws,"_images",[]),1):
+                    try:
+                        b=img._data()
+                        fmt=(getattr(img,"format","png") or "png").lower()
+                        mime="image/jpeg" if fmt in ("jpg","jpeg") else "image/png"
+                        out.append({"name":f"{ws.title}-{i}.{fmt}","mime":mime,"data_url":_data_uri(b,mime),"source":f"XLSX {ws.title}"})
+                    except Exception: pass
+        elif ext==".pdf":
+            # Extract embedded raster images where pypdf exposes them.
+            from pypdf import PdfReader
+            reader=PdfReader(io.BytesIO(data))
+            for pi,page in enumerate(reader.pages,1):
+                try:
+                    for ii,img in enumerate(page.images,1):
+                        b=img.data
+                        nm=getattr(img,"name",f"page-{pi}-{ii}.png")
+                        suf=Path(nm).suffix.lower()
+                        mime={".jpg":"image/jpeg",".jpeg":"image/jpeg",".png":"image/png",".jp2":"image/jp2"}.get(suf,"image/png")
+                        out.append({"name":nm,"mime":mime,"data_url":_data_uri(b,mime),"source":f"PDF {pi}-бет"})
+                except Exception: pass
+    except Exception:
+        pass
+    return out[:40]
+
+@app.post("/api/kmj/images")
+async def kmj_images(file: UploadFile=File(...)):
+    data=await file.read()
+    images=extract_images(file.filename,data)
+    return {"count":len(images),"images":images}
 
 # ---------------- Class import ----------------
 def clean(v): return "" if v is None else str(v).strip()

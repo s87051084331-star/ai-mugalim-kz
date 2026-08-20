@@ -3,6 +3,7 @@
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f6fb;color:#0f172a}header{background:#111827;color:#fff;padding:18px 4%;display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}h1{margin:0}.wrap{max-width:1450px;margin:auto;padding:20px}.tabs{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}.tabs button,button{border:0;border-radius:11px;padding:11px 16px;font-weight:700;cursor:pointer}.tabs button{background:#dbeafe;color:#1e40af}.tabs .on,.blue{background:#2563eb;color:#fff}.green{background:#16a34a;color:#fff}.gray{background:#475569;color:#fff}.red{background:#dc2626;color:#fff}.card{background:#fff;border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 6px 22px #0000000d}.panel{display:none}.panel.on{display:block}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}input,textarea,select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;margin:5px 0 11px;font-size:15px}label{font-weight:700}.notice{background:#fff7ed;border:1px solid #fdba74;padding:12px;border-radius:11px}.ok{background:#ecfdf5;border:1px solid #86efac;padding:12px;border-radius:11px}.muted{color:#64748b}table{width:100%;border-collapse:collapse;min-width:800px}th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left}th{background:#f8fafc}.lessonbar{background:#e0f2fe;border:1px solid #7dd3fc;border-radius:14px;padding:14px;margin-bottom:16px}.qr img{width:260px;max-width:100%;background:white;padding:10px;border-radius:12px}video{width:100%;max-width:640px;background:#111;border-radius:14px}.meter{height:12px;background:#e2e8f0;border-radius:10px;overflow:hidden}.meter span{display:block;height:100%;background:#16a34a;width:0}footer{background:#111827;color:white;text-align:center;padding:18px;margin-top:28px}@media(max-width:760px){.grid,.grid3{grid-template-columns:1fr}}
 .task-card{line-height:1.55}.task-card b{font-size:1.08em}#presentationBoard:fullscreen{background:white;padding:4vw;overflow:auto;font-size:2rem}#presentationBoard:fullscreen .task-card{box-shadow:none;border:1px solid #ddd;margin:18px 0}
+.image-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}.image-card img{width:100%;max-height:240px;object-fit:contain;background:#f8fafc;border-radius:10px}.task-image{max-width:520px;width:100%;max-height:360px;object-fit:contain;margin:10px 0;border-radius:10px;background:#f8fafc}
 </style><script>
 window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};
 </script>
@@ -11,7 +12,7 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 <header><div><h1>🎓 AI Мұғалім көмекшісі</h1><div>ZEREK Education • Қазақстан мұғалімдеріне арналған көмекші құрал</div></div><div><b>Жоба авторы: ҚОҚАЙ ЖІГЕР</b></div></header>
 <div class="wrap">
 <div class="card" style="padding:14px 18px"><div class="grid"><div><label>🤖 AI провайдері</label><select id="aiProvider"><option value="gemini">Google Gemini</option><option value="openai">OpenAI (ChatGPT модельдері)</option></select></div><div><label>AI күйі</label><div id="aiStatus" class="notice">Тексерілуде...</div></div></div></div><div id="lessonBar" class="lessonbar"><b>📚 Ағымдағы сабақ:</b> әлі басталмаған.</div>
-<div class="tabs" id="tabs"><button data-p="kmj" class="on">📘 ҚМЖ</button><button data-p="tasks">📝 HTML тапсырма</button><button data-p="groups">👥 Топтық жұмыс</button><button data-p="screen">🖥 Экран режимі</button><button data-p="resources">🔗 Сыртқы ресурстар</button><button data-p="class">👥 Сынып</button><button data-p="qr">📱 QR қатысу</button><button data-p="monitor">📹 Сабақ мониторингі</button><button data-p="oral">🎙️ Ауызша жауап</button><button data-p="analysis">🤖 Жеке талдау</button><button data-p="journal">📊 Журнал</button></div>
+<div class="tabs" id="tabs"><button data-p="kmj" class="on">📘 ҚМЖ</button><button data-p="tasks">📝 HTML тапсырма</button><button data-p="images">🖼 ҚМЖ суреттері</button><button data-p="groups">👥 Топтық жұмыс</button><button data-p="screen">🖥 Экран режимі</button><button data-p="resources">🔗 Сыртқы ресурстар</button><button data-p="class">👥 Сынып</button><button data-p="qr">📱 QR қатысу</button><button data-p="monitor">📹 Сабақ мониторингі</button><button data-p="oral">🎙️ Ауызша жауап</button><button data-p="analysis">🤖 Жеке талдау</button><button data-p="journal">📊 Журнал</button></div>
 
 <section id="kmj" class="panel on">
 <div class="card"><h2>📘 ҚМЖ-ны автоматты оқу</h2><div class="grid"><div><input id="kmjFile" type="file" accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv"><button class="blue" id="readKmj">ҚМЖ-ны оқу</button> <button class="gray" id="retryKmj">AI талдауын қайталау</button></div><div><label>AI-ға ескерту</label><textarea id="kmjHint" rows="3" placeholder="Мысалы: тек негізгі сабақ тапсырмаларын ал"></textarea></div></div><div id="kmjStatus" class="notice">ҚМЖ жүктелмеді.</div></div>
@@ -30,6 +31,13 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 </section>
 
 
+
+<section id="images" class="panel">
+<div class="card"><h2>🖼 ҚМЖ-дан алынған суреттер</h2>
+<p class="muted">DOCX/PPTX/XLSX және кей PDF файлдарындағы суреттер автоматты шығарылады. Мұғалім суретті тапсырмаға тіркей алады немесе экранға шығара алады.</p>
+<div id="kmjImageStatus" class="notice">ҚМЖ жүктелгеннен кейін суреттер осы жерде пайда болады.</div>
+<div id="kmjImageGallery" class="image-grid" style="margin-top:14px"></div>
+</div></section>
 <section id="groups" class="panel">
 <div class="card"><h2>👥 Топтық жұмыс</h2>
 <p class="muted">ҚМЖ-дан табылған немесе AI жасаған топтық тапсырмаларды топтарға бөліп көрсетіңіз.</p>
@@ -85,7 +93,7 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 "use strict";
 const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let lesson=JSON.parse(localStorage.getItem("currentLesson")||"null")||{subject:"",class_name:"",topic:"",learning_objective:"",lesson_goal:"",tasks:[]};
-let generatedTasks=[],publishedCode="",lastKmjText=sessionStorage.getItem("lastKmjText")||"",students=JSON.parse(localStorage.getItem("students")||"[]"),attendance=JSON.parse(localStorage.getItem("attendance")||"{}"),qrToken="",qrPoll=null;
+let generatedTasks=[],kmjImages=[],publishedCode="",lastKmjText=sessionStorage.getItem("lastKmjText")||"",students=JSON.parse(localStorage.getItem("students")||"[]"),attendance=JSON.parse(localStorage.getItem("attendance")||"{}"),qrToken="",qrPoll=null;
 function save(){localStorage.setItem("currentLesson",JSON.stringify(lesson));localStorage.setItem("students",JSON.stringify(students));localStorage.setItem("attendance",JSON.stringify(attendance))}
 function tabs(){document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#tabs button").forEach(x=>x.classList.remove("on"));b.classList.add("on");document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));$(b.dataset.p).classList.add("on")})}
 function refreshIds(){students.forEach((s,i)=>s.id="ST"+String(i+1).padStart(2,"0"))}
@@ -109,7 +117,9 @@ async function analyzeKmjText(text){
 $("readKmj").onclick=async()=>{
  let f=$("kmjFile").files[0];if(!f)return alert("ҚМЖ файлын таңдаңыз");
  let fd=new FormData();fd.append("file",f);$("kmjStatus").textContent="ҚМЖ файлы оқылуда...";
- try{let r=await fetch("/api/parse",{method:"POST",body:fd}),d=await r.json();if(!r.ok)throw Error(d.detail||"Файл оқылмады");lastKmjText=d.text||"";sessionStorage.setItem("lastKmjText",lastKmjText);await analyzeKmjText(lastKmjText)}
+ try{let r=await fetch("/api/parse",{method:"POST",body:fd}),d=await r.json();if(!r.ok)throw Error(d.detail||"Файл оқылмады");lastKmjText=d.text||"";sessionStorage.setItem("lastKmjText",lastKmjText);
+  try{let ifd=new FormData();ifd.append("file",f);let ir=await fetch("/api/kmj/images",{method:"POST",body:ifd}),ij=await ir.json();kmjImages=ij.images||[];renderKmjImages()}catch(_e){kmjImages=[];renderKmjImages()}
+  await analyzeKmjText(lastKmjText)}
  catch(e){$("kmjStatus").textContent="❌ "+e.message}
 };
 $("retryKmj").onclick=async()=>{if(!lastKmjText)return alert("Алдымен ҚМЖ файлын бір рет оқытыңыз.");try{await analyzeKmjText(lastKmjText)}catch(e){$("kmjStatus").textContent="❌ "+e.message}};
@@ -125,15 +135,30 @@ provider:$("aiProvider").value})});
   let d=await r.json();if(!r.ok)throw Error(d.detail||"AI тапсырма жасай алмады");
   generatedTasks=(d.data&&Array.isArray(d.data.tasks))?d.data.tasks:[];
   if(!generatedTasks.length)throw Error("AI tasks массивін бос қайтарды");
-  renderTaskPreview();$("publishInfo").innerHTML=`✅ Тапсырма дайын. Режим: <b>${esc(d.mode||d.provider||$("aiProvider").value)}</b>${d.fallback?` • 🔁 ${esc($("aiProvider").value)} → ${esc(d.mode)} резервтік AI қолданылды`:""} • ${generatedTasks.length} тапсырма`;
+  renderTaskPreview();renderKmjImages();$("publishInfo").innerHTML=`✅ Тапсырма дайын. Режим: <b>${esc(d.mode||d.provider||$("aiProvider").value)}</b>${d.fallback?` • 🔁 ${esc($("aiProvider").value)} → ${esc(d.mode)} резервтік AI қолданылды`:""} • ${generatedTasks.length} тапсырма`;
  }catch(e){console.error(e);generatedTasks=[];$("publishInfo").textContent="❌ "+e.message}
 };
 function typesetMath(el){if(window.MathJax?.typesetPromise)window.MathJax.typesetPromise(el?[el]:undefined).catch(()=>{})}
 function modeLabel(m){return ({group:"👥 Топтық",pair:"👫 Жұптық",individual:"👤 Жеке",external:"🔗 Сыртқы"})[m]||"👤 Жеке"}
 function renderTaskCard(t,i){
  const ext=t.external_url?`<div style="margin-top:8px"><a href="${esc(t.external_url)}" target="_blank" rel="noopener noreferrer">🔗 Сыртқы платформаны ашу</a></div>`:"";
- return `<div class="card task-card" data-mode="${esc(t.work_mode||"individual")}" data-group="${esc(t.group_name||"")}"><div class="muted">${modeLabel(t.work_mode)} ${t.group_name?("• "+esc(t.group_name)):""}</div><b>${i+1}. ${esc(t.question)}</b><br><span class="muted">Түрі: ${esc(t.type)} • Дескриптор: ${esc(t.descriptor)}</span>${ext}</div>`
+ const pic=t.image?.data_url?`<div><img src="${t.image.data_url}" class="task-image" alt="${esc(t.image.name||"ҚМЖ суреті")}"></div>`:"";
+ return `<div class="card task-card" data-mode="${esc(t.work_mode||"individual")}" data-group="${esc(t.group_name||"")}"><div class="muted">${modeLabel(t.work_mode)} ${t.group_name?("• "+esc(t.group_name)):""}</div><b>${i+1}. ${esc(t.question)}</b>${pic}<br><span class="muted">Түрі: ${esc(t.type)} • Дескриптор: ${esc(t.descriptor)}</span>${ext}</div>`
 }
+
+function renderKmjImages(){
+ $("kmjImageStatus").innerHTML=kmjImages.length?`✅ ҚМЖ-дан <b>${kmjImages.length}</b> сурет табылды.`:"ҚМЖ-дан кірістірілген сурет табылмады.";
+ $("kmjImageGallery").innerHTML=kmjImages.map((im,i)=>`<div class="card image-card"><img src="${im.data_url}" alt="${esc(im.name)}"><b>${esc(im.name)}</b><br><span class="muted">${esc(im.source||"")}</span><div style="margin-top:8px"><label>Тапсырмаға тіркеу</label><select onchange="attachImage(${i},this.value)"><option value="">Таңдаңыз</option>${generatedTasks.map(t=>`<option value="${t.id}">${t.id}-тапсырма</option>`).join("")}</select><button class="blue" onclick="showImageScreen(${i})">🖥 Экранға шығару</button></div></div>`).join("");
+}
+window.attachImage=(imageIndex,taskId)=>{
+ let t=generatedTasks.find(x=>String(x.id)===String(taskId));if(!t)return;
+ t.image=kmjImages[imageIndex];renderTaskPreview();renderKmjImages();
+};
+window.showImageScreen=(i)=>{
+ let im=kmjImages[i];if(!im)return;
+ $("presentationBoard").innerHTML=`<h2>${esc(im.name)}</h2><img src="${im.data_url}" class="task-image" style="max-width:90vw;max-height:75vh">`;
+ if($("presentationBoard").requestFullscreen)$("presentationBoard").requestFullscreen().catch(()=>{});
+};
 function renderTaskPreview(){
  $("taskPreview").innerHTML=generatedTasks.map(renderTaskCard).join("")||"Тапсырма жоқ.";
  renderGroups();typesetMath($("taskPreview"));
