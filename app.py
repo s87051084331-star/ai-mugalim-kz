@@ -156,3 +156,117 @@ def get_attendance(token:str):
     s=SESSIONS.get(token)
     if not s:raise HTTPException(status_code=404,detail="Сессия табылмады.")
     return {"class_name":s["class_name"],"topic":s["topic"],"active":s["active"],"attendance":list(s["attendance"].values())}
+
+# --- Online QR attendance: server-generated QR ---
+from pydantic import BaseModel
+from fastapi import HTTPException
+from fastapi.responses import Response
+from datetime import datetime, timedelta
+from io import BytesIO
+import secrets
+import qrcode
+
+SESSIONS = {}
+
+class SessionStart(BaseModel):
+    class_name: str = "Сынып"
+    topic: str = "Сабақ"
+    minutes: int = 10
+
+class CheckIn(BaseModel):
+    token: str
+    name: str
+    class_name: str
+    student_id: str | None = None
+
+@app.post("/api/session/start")
+def start_session(body: SessionStart):
+    token = secrets.token_urlsafe(8).replace("-", "").replace("_", "")[:10].upper()
+    minutes = max(1, min(int(body.minutes or 10), 120))
+    now = datetime.now()
+    SESSIONS[token] = {
+        "class_name": body.class_name.strip() or "Сынып",
+        "topic": body.topic.strip() or "Сабақ",
+        "active": True,
+        "created_at": now,
+        "expires_at": now + timedelta(minutes=minutes),
+        "attendance": {}
+    }
+    return {
+        "token": token,
+        "class_name": SESSIONS[token]["class_name"],
+        "topic": SESSIONS[token]["topic"],
+        "expires_at": SESSIONS[token]["expires_at"].isoformat()
+    }
+
+@app.get("/api/session/{token}")
+def get_session(token: str):
+    s = SESSIONS.get(token)
+    if not s:
+        raise HTTPException(status_code=404, detail="Сессия табылмады.")
+    if datetime.now() >= s["expires_at"]:
+        s["active"] = False
+    return {
+        "class_name": s["class_name"],
+        "topic": s["topic"],
+        "active": s["active"],
+        "expires_at": s["expires_at"].isoformat()
+    }
+
+@app.get("/api/session/{token}/qr.png")
+def session_qr(token: str, base: str):
+    s = SESSIONS.get(token)
+    if not s:
+        raise HTTPException(status_code=404, detail="Сессия табылмады.")
+    url = base.rstrip("/") + "/?session=" + token
+    img = qrcode.make(url)
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    return Response(content=buf.getvalue(), media_type="image/png")
+
+@app.post("/api/session/stop/{token}")
+def stop_session(token: str):
+    s = SESSIONS.get(token)
+    if s:
+        s["active"] = False
+    return {"ok": True}
+
+@app.post("/api/checkin")
+def checkin(body: CheckIn):
+    s = SESSIONS.get(body.token)
+    if not s:
+        raise HTTPException(status_code=404, detail="QR-сабақ табылмады.")
+    if datetime.now() >= s["expires_at"]:
+        s["active"] = False
+    if not s["active"]:
+        raise HTTPException(status_code=410, detail="QR-сабақ аяқталған немесе уақыты біткен.")
+    name = body.name.strip()
+    cls = body.class_name.strip()
+    if not name or not cls:
+        raise HTTPException(status_code=400, detail="Аты-жөні мен сынып міндетті.")
+    # One attendance record per student ID if supplied, otherwise name+class.
+    key = (body.student_id or (name + "|" + cls)).strip().lower()
+    now = datetime.now().strftime("%H:%M:%S")
+    if key not in s["attendance"]:
+        s["attendance"][key] = {
+            "student_id": (body.student_id or "").strip(),
+            "name": name,
+            "class_name": cls,
+            "time": now
+        }
+    return {"ok": True, "time": s["attendance"][key]["time"]}
+
+@app.get("/api/session/{token}/attendance")
+def session_attendance(token: str):
+    s = SESSIONS.get(token)
+    if not s:
+        raise HTTPException(status_code=404, detail="Сессия табылмады.")
+    if datetime.now() >= s["expires_at"]:
+        s["active"] = False
+    return {
+        "class_name": s["class_name"],
+        "topic": s["topic"],
+        "active": s["active"],
+        "expires_at": s["expires_at"].isoformat(),
+        "attendance": list(s["attendance"].values())
+    }

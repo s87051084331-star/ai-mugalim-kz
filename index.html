@@ -21,7 +21,100 @@ video{width:100%;border-radius:12px;background:#111;min-height:220px}.notice{bac
 @media(max-width:900px){.grid{grid-template-columns:1fr}.student-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js">
+// ===== Server QR attendance (no external QR library required) =====
+let serverSessionToken = localStorage.getItem('serverSessionToken') || '';
+let serverSessionPoll = null;
+
+function academicGradeRecommendation(s){
+  const m = String(s.ai || '').match(/(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/);
+  if(!m || Number(m[2]) <= 0) return {grade:'—', why:'Баға ұсыну үшін оқу тапсырмасының нәтижесі қажет.'};
+  const pct = Number(m[1]) / Number(m[2]) * 100;
+  const grade = pct >= 85 ? 5 : pct >= 65 ? 4 : pct >= 40 ? 3 : 2;
+  return {grade, why:`Оқу тапсырмасының нәтижесі: ${Math.round(pct)}%. Қатысу бағаға автоматты қосылмайды.`};
+}
+
+async function startServerQrSession(){
+  const info=document.getElementById('serverSessionInfo'), box=document.getElementById('serverQrBox');
+  try{
+    info.textContent='QR-сабақ ашылуда...';
+    const body={
+      class_name:(document.getElementById('className')?.value||'Сынып').trim(),
+      topic:(document.getElementById('topic')?.value||'Сабақ').trim(),
+      minutes:Number(document.getElementById('sessionMinutes')?.value||10)
+    };
+    const r=await fetch('/api/session/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Сессия ашылмады');
+    serverSessionToken=d.token; localStorage.setItem('serverSessionToken',d.token);
+    const base=location.origin;
+    const qr='/api/session/'+encodeURIComponent(d.token)+'/qr.png?base='+encodeURIComponent(base);
+    const join=base+'/?session='+encodeURIComponent(d.token);
+    box.innerHTML=`<img src="${qr}" alt="Сабақ QR" style="width:260px;max-width:100%;border:10px solid white;border-radius:12px"><div style="margin-top:8px"><b>Код:</b> ${d.token}</div>`;
+    info.innerHTML=`<b>${d.class_name}</b> • ${d.topic}<br>QR мерзімі: ${new Date(d.expires_at).toLocaleTimeString('kk-KZ')}<br><small>${join}</small>`;
+    pollServerSession();
+  }catch(e){info.textContent='❌ '+e.message}
+}
+async function stopServerQrSession(){
+  if(serverSessionToken) try{await fetch('/api/session/stop/'+encodeURIComponent(serverSessionToken),{method:'POST'})}catch(e){}
+  serverSessionToken='';localStorage.removeItem('serverSessionToken');clearInterval(serverSessionPoll);
+  document.getElementById('serverQrBox').innerHTML='';
+  document.getElementById('serverSessionInfo').textContent='Сабақ аяқталды. QR енді жарамсыз.';
+}
+function pollServerSession(){
+  clearInterval(serverSessionPoll); if(!serverSessionToken)return;
+  const pull=async()=>{
+    try{
+      const r=await fetch('/api/session/'+encodeURIComponent(serverSessionToken)+'/attendance'); if(!r.ok)return;
+      const d=await r.json();
+      (d.attendance||[]).forEach(a=>{
+        let s=null;
+        if(a.student_id) s=students.find(x=>String(x.id).toLowerCase()===String(a.student_id).toLowerCase());
+        if(!s) s=students.find(x=>String(x.name).trim().toLowerCase()===String(a.name).trim().toLowerCase());
+        if(s && !attendance[s.id]) attendance[s.id]={time:a.time,present:true,source:'phone'};
+      });
+      localStorage.setItem('attendance',JSON.stringify(attendance));
+      if(typeof renderAttendance==='function')renderAttendance();
+      if(typeof renderClass==='function')renderClass();
+      if(typeof renderJournal==='function')renderJournal();
+      document.getElementById('serverSessionInfo').innerHTML=`<b>${d.class_name}</b> • ${d.topic}<br>Телефонмен тіркелгені: <b>${(d.attendance||[]).length}</b> • ${d.active?'QR белсенді':'QR аяқталды'}`;
+      if(!d.active) clearInterval(serverSessionPoll);
+    }catch(e){}
+  };
+  pull(); serverSessionPoll=setInterval(pull,3000);
+}
+async function loadServerCheckin(){
+  const token=new URLSearchParams(location.search).get('session'); if(!token)return;
+  document.getElementById('serverCheckinScreen').style.display='block';
+  try{
+    const r=await fetch('/api/session/'+encodeURIComponent(token)); const d=await r.json();
+    if(!r.ok)throw new Error(d.detail||'Сессия табылмады');
+    document.getElementById('serverCheckinLesson').innerHTML=`<b>${d.class_name}</b><br>${d.topic}<br>${d.active?'QR белсенді':'QR аяқталған'}`;
+    document.getElementById('serverCheckinClass').value=d.class_name||'';
+  }catch(e){document.getElementById('serverCheckinLesson').textContent='❌ '+e.message}
+}
+async function submitServerCheckin(){
+  const token=new URLSearchParams(location.search).get('session');
+  const payload={token,student_id:document.getElementById('serverCheckinId').value.trim(),name:document.getElementById('serverCheckinName').value.trim(),class_name:document.getElementById('serverCheckinClass').value.trim()};
+  if(!payload.name||!payload.class_name){document.getElementById('serverCheckinStatus').textContent='Аты-жөні мен сыныпты толтырыңыз.';return}
+  try{
+    const r=await fetch('/api/checkin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const d=await r.json();
+    if(!r.ok)throw new Error(d.detail||'Қате');
+    document.getElementById('serverCheckinStatus').innerHTML=`✅ Қатысу тіркелді. Уақыты: <b>${d.time}</b>`;
+  }catch(e){document.getElementById('serverCheckinStatus').textContent='❌ '+e.message}
+}
+window.addEventListener('load',()=>{loadServerCheckin();if(serverSessionToken)pollServerSession()});
+
+// Final journal override: attendance is displayed separately and does NOT inflate the academic grade.
+if(typeof renderJournal==='function'){
+  renderJournal=function(){
+    journalBody.innerHTML=students.map((s,i)=>{
+      const r=academicGradeRecommendation(s);
+      return `<tr><td>${i+1}</td><td>${s.name}</td><td>${s.id}</td><td>${s.ai}</td><td><b>${r.grade}</b></td><td class="muted">${r.why}</td><td>${s.teacher}</td><td>${s.teacher==='—'?'Күтуде':'Расталды'}</td></tr>`;
+    }).join('');
+  };
+}
+
+</script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 .att-row{display:grid;grid-template-columns:55px 1fr 90px 100px 120px;gap:8px;align-items:center;padding:8px;border-bottom:1px solid #e4e7ec}
@@ -30,7 +123,22 @@ video{width:100%;border-radius:12px;background:#111;min-height:220px}.notice{bac
 </style>
 </head>
 <body>
-<header><h1>🎓 AI Мұғалім көмекшісі</h1><span>Сынып • ҚМЖ • Аудио • Бағалау <b style="background:#2563eb;padding:5px 9px;border-radius:8px;margin-left:8px">v3 • XLSX/CSV • 8085</b></span></header><div id="checkinScreen" style="display:none;position:fixed;inset:0;background:#f4f7fb;z-index:9999;padding:22px;overflow:auto"><div class="card" style="max-width:560px;margin:40px auto"><h2>📚 Сабаққа қатысуды растау</h2><label>Аты-жөніңіз</label><input id="checkinName" placeholder="Мысалы: Айдос Нұрланұлы"><label>Сынып</label><input id="checkinClass" placeholder="Мысалы: 8А"><button class="good" onclick="submitCheckin()">✅ Қатыстым</button><div id="checkinStatus" class="notice" style="margin-top:12px">QR арқылы ашылған сабаққа тіркеліңіз.</div></div></div>
+<header><h1>🎓 AI Мұғалім көмекшісі</h1><span>Сынып • ҚМЖ • Аудио • Бағалау <b style="background:#2563eb;padding:5px 9px;border-radius:8px;margin-left:8px">v3 • XLSX/CSV • 8085</b></span></header>
+<div id="serverCheckinScreen" style="display:none;position:fixed;inset:0;background:#f4f7fb;z-index:99999;padding:20px;overflow:auto">
+  <div class="card" style="max-width:560px;margin:30px auto">
+    <h2>✅ Сабаққа қатысуды растау</h2>
+    <div id="serverCheckinLesson" class="notice">Сабақ ақпараты жүктелуде...</div>
+    <label>Оқушы ID (бар болса)</label>
+    <input id="serverCheckinId" placeholder="Мысалы: ST01">
+    <label>Аты-жөні</label>
+    <input id="serverCheckinName" placeholder="Аты-жөніңіз">
+    <label>Сынып</label>
+    <input id="serverCheckinClass" placeholder="Мысалы: 8А">
+    <button class="good" onclick="submitServerCheckin()">Қатыстым</button>
+    <div id="serverCheckinStatus" class="notice" style="margin-top:10px">Мәліметтерді толтырыңыз.</div>
+  </div>
+</div>
+<div id="checkinScreen" style="display:none;position:fixed;inset:0;background:#f4f7fb;z-index:9999;padding:22px;overflow:auto"><div class="card" style="max-width:560px;margin:40px auto"><h2>📚 Сабаққа қатысуды растау</h2><label>Аты-жөніңіз</label><input id="checkinName" placeholder="Мысалы: Айдос Нұрланұлы"><label>Сынып</label><input id="checkinClass" placeholder="Мысалы: 8А"><button class="good" onclick="submitCheckin()">✅ Қатыстым</button><div id="checkinStatus" class="notice" style="margin-top:12px">QR арқылы ашылған сабаққа тіркеліңіз.</div></div></div>
 <div class="wrap">
 <div class="tabs">
 <button class="tab active" data-p="qmj">ҚМЖ</button><button class="tab" data-p="students">Сыныпты басқару</button>
@@ -79,6 +187,23 @@ video{width:100%;border-radius:12px;background:#111;min-height:220px}.notice{bac
 
 <section id="camera" class="panel"><div class="card"><h2>📱 Телефонмен QR арқылы қатысу</h2><p class="muted">«Сабақты бастау» басыңыз. Оқушы QR-кодты телефонмен сканерлеп, аты-жөнін енгізеді.</p><button class="good" onclick="startOnlineSession()">Сабақты бастау</button> <button class="secondary" onclick="stopOnlineSession()">Сабақты аяқтау</button><div id="sessionQr" class="qrbox" style="margin-top:12px"></div><p id="sessionInfo" class="muted">Белсенді QR-сабақ жоқ.</p></div>
 <div class="grid">
+
+<div class="card">
+  <h2>📱 Сабаққа ортақ QR</h2>
+  <p class="muted">Оқушылар телефон камерасымен осы QR-кодты сканерлейді. QR серверде жасалады, сыртқы QR кітапханасы қажет емес.</p>
+  <div class="grid2">
+    <div>
+      <label>QR жарамдылық уақыты (минут)</label>
+      <input id="sessionMinutes" type="number" min="1" max="120" value="10">
+    </div>
+    <div style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
+      <button class="good" onclick="startServerQrSession()">Сабақты бастау</button>
+      <button class="secondary" onclick="stopServerQrSession()">Сабақты аяқтау</button>
+    </div>
+  </div>
+  <div id="serverQrBox" style="margin-top:14px"></div>
+  <div id="serverSessionInfo" class="notice" style="margin-top:10px">Белсенді QR-сабақ жоқ.</div>
+</div>
 <div class="card"><h2>📷 QR арқылы қатысуды тіркеу</h2>
 <div id="reader"></div>
 <button id="scanBtn" onclick="startQR()">QR сканерлеуді бастау</button>
