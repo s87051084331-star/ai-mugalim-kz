@@ -14,6 +14,7 @@
 .ds-task{margin:8px 0;line-height:1.45}.ds-answer{margin-top:10px;border:1px dashed #64748b;border-radius:9px;padding:8px;background:#fff}.ds-brand{text-align:right;color:#64748b;font-size:11px;margin-top:8px}
 .design-sheet:fullscreen{width:100vw;height:100vh;aspect-ratio:auto;border-radius:0;padding:3vw;font-size:1.25rem}
 @media(max-width:800px){.ds-grid{grid-template-columns:1fr}}
+.design-sheet.a3l{aspect-ratio:420/297}.design-sheet.a3p{aspect-ratio:297/420}.design-sheet.screen43{aspect-ratio:4/3}.design-sheet.square{aspect-ratio:1/1}.design-sheet.phone{aspect-ratio:9/16}.design-sheet.custom{min-height:700px;aspect-ratio:auto}
 </style><script>
 window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};
 </script>
@@ -44,10 +45,13 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 <div class="card"><h2>🎨 Дизайнерлік жұмыс парағы</h2>
 <div class="grid3">
 <div><label>Шаблон</label><select id="designTemplate"><option value="groups">4 топ — 4 түс</option><option value="academic">Көк академиялық</option><option value="minimal">Ақ минимал</option></select></div>
-<div><label>Өлшем</label><select id="designSize"><option value="a4l">A4 көлденең</option><option value="a4p">A4 тік</option><option value="screen">Экран 16:9</option></select></div>
+<div><label>Өлшем</label><select id="designSize"><option value="a4l">A4 көлденең</option><option value="a4p">A4 тік</option><option value="a3l">A3 көлденең</option><option value="a3p">A3 тік</option><option value="screen">Экран 16:9</option><option value="screen43">Экран 4:3</option><option value="square">Квадрат 1:1</option><option value="phone">Телефон 9:16</option><option value="custom">Еркін өлшем</option></select></div>
 <div><label>Парақ тақырыбы</label><input id="designTitle" placeholder="Сабақ тақырыбы"></div>
 </div>
-<label><input id="designAnswers" type="checkbox" style="width:auto"> Мұғалімге жауап кілтін көрсету</label><br>
+<label><input id="designAnswers" type="checkbox" style="width:auto"> Мұғалімге жауап кілтін көрсету</label>
+<div class="grid" style="margin-top:10px"><div><label>🖼 Дизайн үлгісінің фотосы</label><input id="designReference" type="file" accept="image/png,image/jpeg,image/webp"></div><div><label>🤖 AI-ға дизайн нұсқауы</label><textarea id="designInstruction" rows="3" placeholder="Мысалы: үлгідегі 2×2 құрылымды сақта, 4 топ әр түсте болсын, формулалар ірі болсын."></textarea></div></div>
+<div id="designAiStatus" class="notice">Үлгі сурет міндетті емес. Қаласаңыз фото жүктеп, AI-ға талдата аласыз.</div>
+<button class="blue" id="designAnalyzeBtn">🧠 Үлгі дизайнды AI-мен талдау</button><br><br>
 <button class="green" id="designBuildBtn">🎨 Парақ жасау</button>
 <button class="blue" id="designPngBtn">🖼 PNG жүктеу</button>
 <button class="gray" id="designPrintBtn">🖨 Басып шығару / PDF</button>
@@ -270,6 +274,7 @@ if($("exitScreen")) $("exitScreen").onclick=()=>{if(document.fullscreenElement)d
 let resourceText="";
 if($("findResources")) $("findResources").onclick=async()=>{if(!lastKmjText)return alert("Алдымен ҚМЖ-ны оқытыңыз.");let r=await fetch("/api/resources/extract",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:lastKmjText})}),d=await r.json();let rs=d.resources||[];$("resourceList").innerHTML=rs.length?rs.map((x,i)=>`<div class="card"><b>${esc(x.url)}</b><br><label><input type="checkbox" class="resourceApprove" data-url="${esc(x.url)}" style="width:auto"> Оқушыға жариялауға рұқсат</label><br><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">Платформада ашу ↗</a></div>`).join(""):"ҚМЖ-дан URL табылмады."};
 
+let aiDesignSpec=null,designReferenceData="";
 function byId(id){return document.getElementById(id)}
 function on(id,event,fn){const el=byId(id);if(el)el.addEventListener(event,fn)}
 async function pngExport(el,name){
@@ -283,18 +288,45 @@ function printHtml(title,content){
  doc.write("<!doctype html><html><head><meta charset='utf-8'><title>"+title+"</title><style>body{font-family:Arial;padding:24px}.card,.ds-card{border:1px solid #aaa;border-radius:12px;padding:14px;margin:10px}.ds-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.task-image{max-width:100%;max-height:300px;object-fit:contain}details{display:none}</style></head><body>"+content+"</body></html>");
  doc.close();setTimeout(()=>win.print(),600);
 }
+
+on("designReference","change",async e=>{let f=e.target.files?.[0];if(!f)return;let reader=new FileReader();reader.onload=()=>{designReferenceData=reader.result;byId("designAiStatus").innerHTML=`🖼 Үлгі жүктелді: <b>${esc(f.name)}</b>. «AI-мен талдау» басыңыз.`};reader.readAsDataURL(f)});
+on("designAnalyzeBtn","click",async()=>{
+ if(!designReferenceData)return alert("Алдымен PNG/JPG үлгі суретті таңдаңыз.");
+ byId("designAiStatus").textContent="🤖 Үлгі дизайн талданып жатыр...";
+ try{
+  let r=await fetch("/api/design/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({provider:byId("aiProvider")?.value||"gemini",image_data_url:designReferenceData,instruction:byId("designInstruction")?.value||""})});
+  let d=await r.json();if(!r.ok)throw Error(d.detail||"Дизайн талданбады");
+  aiDesignSpec=d.design||null;
+  byId("designAiStatus").innerHTML=`✅ Үлгі талданды. AI: <b>${esc(d.provider)}</b> • ${esc(aiDesignSpec?.notes||"Дизайн схемасы дайын")}`;
+  buildDesignSheet();
+ }catch(e){byId("designAiStatus").textContent="❌ "+e.message}
+});
 function buildDesignSheet(){
  const canvas=byId("designCanvas");if(!canvas)return;
  if(!Array.isArray(generatedTasks)||!generatedTasks.length){canvas.innerHTML='<div class="notice">Алдымен HTML тапсырманы дайындаңыз.</div>';return}
  const title=(byId("designTitle")?.value||lesson.topic||"Топтық тапсырмалар");
  const size=byId("designSize")?.value||"a4l";canvas.className="design-sheet "+size;
  const colors=["ds-blue","ds-green","ds-orange","ds-purple"];
+ const spec=aiDesignSpec||null;
  const names=(typeof studentGroups!=="undefined"&&studentGroups.length?studentGroups.map(g=>g.name):["1-топ","2-топ","3-топ","4-топ"]).slice(0,4);
  while(names.length<4)names.push((names.length+1)+"-топ");
  const buckets=names.map(n=>({name:n,tasks:[]}));
  generatedTasks.forEach((t,i)=>{let gi=t.group_name?names.indexOf(t.group_name):-1;if(gi<0)gi=i%4;buckets[gi].tasks.push(t)});
  const showAns=!!byId("designAnswers")?.checked;
+ if(spec?.background)canvas.style.background=spec.background;
+ else canvas.style.background="#fff";
  canvas.innerHTML='<div class="ds-head"><h2>'+esc(title)+'</h2><div>'+esc(lesson.class_name||"")+' • '+esc(lesson.subject||"")+' • 🎯 '+esc(lesson.learning_objective||"")+'</div></div><div class="ds-grid">'+buckets.map((g,gi)=>'<div class="ds-card '+colors[gi]+'"><h3>'+esc(g.name)+'</h3>'+g.tasks.map((t,i)=>'<div class="ds-task"><b>'+(i+1)+'.</b> '+esc(t.question||"")+(t.image?.data_url?'<div><img class="task-image" src="'+t.image.data_url+'"></div>':'')+'<div class="muted">Дескриптор: '+esc(t.descriptor||"")+'</div></div>').join("")+(showAns?'<div class="ds-answer"><b>Жауап:</b><br>'+g.tasks.map((t,i)=>(i+1)+') '+esc(t.correct_answer||t.answer||"—")).join("<br>")+'</div>':'')+'</div>').join("")+'</div><div class="ds-brand">ZEREK Education • AI Мұғалім көмекшісі</div>';
+ if(spec){
+   const grid=canvas.querySelector(".ds-grid");
+   if(grid)grid.style.gridTemplateColumns=`repeat(${Math.max(1,Math.min(4,Number(spec.columns||2)))},1fr)`;
+   const palette=Array.isArray(spec.palette)?spec.palette:[];
+   canvas.querySelectorAll(".ds-card").forEach((card,i)=>{
+     if(palette.length){let c=palette[i%palette.length];card.style.borderColor=c;card.style.background=c+"12";let h=card.querySelector("h3");if(h)h.style.background=c}
+     if(spec.border_radius!=null)card.style.borderRadius=Number(spec.border_radius)+"px";
+     if(spec.border_width!=null)card.style.borderWidth=Number(spec.border_width)+"px";
+   });
+   if(spec.font_scale)canvas.style.fontSize=Number(spec.font_scale)+"em";
+ }
  typesetMath(canvas);
 }
 on("taskPngBtn","click",()=>pngExport(byId("taskPreview"),"ZEREK_tapsyrmalar.png"));

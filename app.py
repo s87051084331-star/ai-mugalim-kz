@@ -415,6 +415,57 @@ def extract_resources(body: ResourceExtract):
         if u not in urls: urls.append(u)
     return {"resources":[{"url":u,"approved":False} for u in urls[:30]]}
 
+
+class DesignAnalyze(BaseModel):
+    provider: str = "gemini"
+    image_data_url: str
+    instruction: str = ""
+
+@app.post("/api/design/analyze")
+async def design_analyze(body: DesignAnalyze):
+    import base64 as _b64, httpx
+    if "," not in body.image_data_url:
+        raise HTTPException(400,"Үлгі сурет оқылмады.")
+    meta,b64=body.image_data_url.split(",",1)
+    mime=(meta.split(";")[0].split(":")[-1] or "image/png")
+    instruction=body.instruction or "Үлгінің жалпы орналасуын, түстерін және карточка құрылымын сипатта."
+    prompt="""Бұл мұғалім жіберген жұмыс парағының дизайн үлгісі.
+Суреттегі тапсырма мәтінін көшірме. Тек визуалдық құрылымды талда.
+Тек JSON қайтар:
+{"layout":"grid2x2|grid1x4|grid2x3|free","columns":2,"card_count":4,
+"palette":["#hex"],"background":"#hex","title_style":"pill|plain|banner",
+"border_radius":18,"border_width":3,"font_scale":1.0,
+"image_position":"right|left|top|none","notes":"қысқа сипаттама"}.
+Мұғалім нұсқауы: """+instruction
+    provider=(body.provider or "gemini").lower()
+    if provider=="openai":
+        key=os.getenv("OPENAI_API_KEY","").strip()
+        if not key: raise HTTPException(400,"OPENAI_API_KEY жоқ.")
+        model=os.getenv("OPENAI_MODEL","gpt-5.6")
+        payload={"model":model,"input":[{"role":"user","content":[
+            {"type":"input_text","text":prompt},
+            {"type":"input_image","image_url":body.image_data_url}
+        ]}]}
+        async with httpx.AsyncClient(timeout=120) as client:
+            r=await client.post("https://api.openai.com/v1/responses",headers={"Authorization":f"Bearer {key}","Content-Type":"application/json"},json=payload)
+            if r.status_code>=400: raise HTTPException(r.status_code,f"OpenAI vision: {r.text[:500]}")
+            d=r.json(); text=""
+            for item in d.get("output",[]):
+                if item.get("type")=="message":
+                    for c in item.get("content",[]):
+                        if c.get("type")=="output_text": text+=c.get("text","")
+            return {"provider":"openai","design":_json_from_text(text)}
+    key=os.getenv("GEMINI_API_KEY","").strip()
+    if not key: raise HTTPException(400,"GEMINI_API_KEY жоқ.")
+    model=os.getenv("GEMINI_MODEL","gemini-3.6-flash")
+    url=f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+    payload={"contents":[{"parts":[{"text":prompt},{"inline_data":{"mime_type":mime,"data":b64}}]}],"generationConfig":{"responseMimeType":"application/json"}}
+    async with httpx.AsyncClient(timeout=120) as client:
+        r=await client.post(url,json=payload)
+        if r.status_code>=400: raise HTTPException(r.status_code,f"Gemini vision: {r.text[:500]}")
+        text=r.json()["candidates"][0]["content"]["parts"][0]["text"]
+        return {"provider":"gemini","design":_json_from_text(text)}
+
 # ---------------- Lesson / task sessions ----------------
 LESSONS={}
 class PublishLesson(BaseModel):
