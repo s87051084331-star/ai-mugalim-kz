@@ -30,7 +30,7 @@ video{width:100%;border-radius:12px;background:#111;min-height:220px}.notice{bac
 </style>
 </head>
 <body>
-<header><h1>🎓 AI Мұғалім көмекшісі</h1><span>Сынып • ҚМЖ • Аудио • Бағалау <b style="background:#2563eb;padding:5px 9px;border-radius:8px;margin-left:8px">v3 • XLSX/CSV • 8085</b></span></header>
+<header><h1>🎓 AI Мұғалім көмекшісі</h1><span>Сынып • ҚМЖ • Аудио • Бағалау <b style="background:#2563eb;padding:5px 9px;border-radius:8px;margin-left:8px">v3 • XLSX/CSV • 8085</b></span></header><div id="checkinScreen" style="display:none;position:fixed;inset:0;background:#f4f7fb;z-index:9999;padding:22px;overflow:auto"><div class="card" style="max-width:560px;margin:40px auto"><h2>📚 Сабаққа қатысуды растау</h2><label>Аты-жөніңіз</label><input id="checkinName" placeholder="Мысалы: Айдос Нұрланұлы"><label>Сынып</label><input id="checkinClass" placeholder="Мысалы: 8А"><button class="good" onclick="submitCheckin()">✅ Қатыстым</button><div id="checkinStatus" class="notice" style="margin-top:12px">QR арқылы ашылған сабаққа тіркеліңіз.</div></div></div>
 <div class="wrap">
 <div class="tabs">
 <button class="tab active" data-p="qmj">ҚМЖ</button><button class="tab" data-p="students">Сыныпты басқару</button>
@@ -64,7 +64,7 @@ video{width:100%;border-radius:12px;background:#111;min-height:220px}.notice{bac
 <p>Бағаланғаны: <b id="gradedCount">0</b></p>
 <div class="notice">Әр оқушыға ST01, ST02... ID автоматты беріледі. Осы ID QR-кодпен, жауаппен және журналмен байланысады.</div>
 </div></div>
-<div class="card"><h2>Оқушылар тізімі</h2><div style="overflow:auto"><table><thead><tr><th>#</th><th>Аты-жөні</th><th>ID</th><th>Қатысу</th><th>Баға</th><th>Әрекет</th></tr></thead><tbody id="classBody"></tbody></table></div></div>
+<div class="card"><h2>Оқушылар тізімі</h2><div id="studentGrid" class="student-grid" style="margin-bottom:14px"></div><div style="overflow:auto"><table><thead><tr><th>#</th><th>Аты-жөні</th><th>ID</th><th>Қатысу</th><th>Баға</th><th>Әрекет</th></tr></thead><tbody id="classBody"></tbody></table></div></div>
 </section>
 
 <section id="answer" class="panel">
@@ -77,7 +77,7 @@ video{width:100%;border-radius:12px;background:#111;min-height:220px}.notice{bac
 <div class="notice">Бұл прототип AI балын тек ұсыныс ретінде береді. Қорытынды бағалауды мұғалім растайды. Аудио тану браузердің Web Speech API мүмкіндігіне тәуелді.</div>
 </section>
 
-<section id="camera" class="panel">
+<section id="camera" class="panel"><div class="card"><h2>📱 Телефонмен QR арқылы қатысу</h2><p class="muted">«Сабақты бастау» басыңыз. Оқушы QR-кодты телефонмен сканерлеп, аты-жөнін енгізеді.</p><button class="good" onclick="startOnlineSession()">Сабақты бастау</button> <button class="secondary" onclick="stopOnlineSession()">Сабақты аяқтау</button><div id="sessionQr" class="qrbox" style="margin-top:12px"></div><p id="sessionInfo" class="muted">Белсенді QR-сабақ жоқ.</p></div>
 <div class="grid">
 <div class="card"><h2>📷 QR арқылы қатысуды тіркеу</h2>
 <div id="reader"></div>
@@ -97,9 +97,24 @@ video{width:100%;border-radius:12px;background:#111;min-height:220px}.notice{bac
 <div id="attendanceList"></div>
 </div></section>
 
-<section id="journal" class="panel"><div class="card"><h2>Электронды журнал</h2><button onclick="exportCSV()">CSV жүктеу</button><div style="overflow:auto"><table><thead><tr><th>#</th><th>Оқушы</th><th>ID</th><th>AI ұсынысы</th><th>Мұғалім балы</th><th>Күйі</th></tr></thead><tbody id="journalBody"></tbody></table></div></div></section>
+<section id="journal" class="panel"><div class="card"><h2>Электронды журнал</h2><button onclick="exportCSV()">CSV жүктеу</button><div style="overflow:auto"><table><thead><tr><th>#</th><th>Оқушы</th><th>ID</th><th>AI нәтижесі</th><th>AI ұсынған баға</th><th>Негіздеме</th><th>Мұғалім балы</th><th>Күйі</th></tr></thead><tbody id="journalBody"></tbody></table></div></div></section>
 </div>
 <script>
+
+const studentGrid=document.getElementById('studentGrid');
+let onlineSessionToken=localStorage.getItem('onlineSessionToken')||'',sessionPoll=null;
+function gradeRecommendation(s){
+ let m=String(s.ai||'').match(/(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/),pct=m&&Number(m[2])>0?Number(m[1])/Number(m[2])*100:null,present=!!attendance?.[s.id];
+ if(pct===null)return {grade:'—',why:'Тапсырма нәтижесі әлі жоқ'};
+ let adjusted=pct+(present?5:0),grade=adjusted>=85?5:adjusted>=65?4:adjusted>=40?3:2;
+ return {grade,why:`Тапсырма ${Math.round(pct)}%${present?' + қатысу расталды':''}. Бұл тек мұғалімге ұсыныс.`};
+}
+async function startOnlineSession(){try{let r=await fetch('/api/session/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({class_name:className.value||'Сынып',topic:topic.value||'Сабақ'})}),d=await r.json();onlineSessionToken=d.token;localStorage.setItem('onlineSessionToken',d.token);let url=location.origin+'/?session='+encodeURIComponent(d.token);sessionQr.innerHTML='';QRCode.toCanvas(url,{width:240,margin:2},(e,c)=>{if(!e)sessionQr.appendChild(c)});sessionInfo.innerHTML=`Код: <b>${d.token}</b><br>${url}`;startSessionPolling()}catch(e){sessionInfo.textContent='Сессия ашылмады: '+e.message}}
+async function stopOnlineSession(){if(onlineSessionToken)try{await fetch('/api/session/stop/'+onlineSessionToken,{method:'POST'})}catch(e){}onlineSessionToken='';localStorage.removeItem('onlineSessionToken');clearInterval(sessionPoll);sessionQr.innerHTML='';sessionInfo.textContent='Сабақ аяқталды.'}
+function startSessionPolling(){clearInterval(sessionPoll);if(!onlineSessionToken)return;const pull=async()=>{try{let r=await fetch('/api/session/'+onlineSessionToken+'/attendance');if(!r.ok)return;let d=await r.json();(d.attendance||[]).forEach(a=>{let s=students.find(x=>x.name.trim().toLowerCase()===String(a.name).trim().toLowerCase());if(s&&!attendance[s.id])attendance[s.id]={time:a.time,present:true,source:'phone'}});localStorage.setItem('attendance',JSON.stringify(attendance));renderAttendance();renderClass();renderJournal();sessionInfo.innerHTML=`Белсенді сабақ: <b>${d.class_name}</b> • Телефонмен тіркелгені: <b>${(d.attendance||[]).length}</b>`}catch(e){}};pull();sessionPoll=setInterval(pull,3000)}
+async function submitCheckin(){let token=new URLSearchParams(location.search).get('session'),name=checkinName.value.trim(),cls=checkinClass.value.trim();if(!name||!cls)return checkinStatus.textContent='Аты-жөніңіз бен сыныпты енгізіңіз.';try{let r=await fetch('/api/checkin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,name,class_name:cls})}),d=await r.json();if(!r.ok)throw new Error(d.detail||'Қате');checkinStatus.innerHTML=`✅ <b>${name}</b>, қатысуыңыз тіркелді. Уақыты: ${d.time}`}catch(e){checkinStatus.textContent='❌ '+e.message}}
+window.addEventListener('load',()=>{if(new URLSearchParams(location.search).get('session'))checkinScreen.style.display='block';if(onlineSessionToken)startSessionPolling()});
+
 const defaultNames=['Айдос Нұрланұлы','Аружан Серікқызы','Әлихан Маратұлы','Айару Ермекқызы','Данияр Асқарұлы','Мадина Болатқызы','Нұрасыл Жандосұлы','Аяла Қанатқызы','Ерасыл Бауыржанұлы','Інжу Талғатқызы','Арсен Дәуренұлы','Томирис Айбекқызы','Мирас Саматұлы','Айым Ерланқызы','Санжар Русланұлы','Кәусар Нұрбекқызы','Әмір Әділұлы','Назерке Қайратқызы','Рамазан Олжасұлы','Алина Мақсатқызы','Нұрдәулет Серікұлы','Жансая Арманқызы','Әділет Бекзатұлы','Аружан Нұржанқызы','Ислам Даниярұлы','Айша Ерболқызы','Темірлан Азаматұлы','Мерей Асхатқызы','Әли Бауыржанұлы','Сезім Жомартқызы'];
 let students=JSON.parse(localStorage.getItem('classStudents')||'null') || defaultNames.map((name,i)=>({id:`ST${String(i+1).padStart(2,'0')}`,name,ai:'—',teacher:'—'}));
 let lesson={rubric:[]},stream=null,camSeconds=0,camTimer=null,recognition=null,listening=false;
@@ -322,4 +337,8 @@ async function importClass(){
 renderStudents();
 renderClass();
 setupQR();
-</script></body></html>
+
+renderJournal=function(){journalBody.innerHTML=students.map((s,i)=>{let r=gradeRecommendation(s);return `<tr><td>${i+1}</td><td>${s.name}</td><td>${s.id}</td><td>${s.ai}</td><td><b>${r.grade}</b></td><td class="muted">${r.why}</td><td>${s.teacher}</td><td>${s.teacher==='—'?'Күтуде':'Расталды'}</td></tr>`}).join('')};
+exportCSV=function(){let rows=[['№','Оқушы','ID','AI нәтижесі','AI ұсынған баға','Негіздеме','Мұғалім балы'],...students.map((s,i)=>{let r=gradeRecommendation(s);return [i+1,s.name,s.id,s.ai,r.grade,r.why,s.teacher]})];let csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(';')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='journal.csv';a.click()};
+renderJournal();
+</script><footer style="max-width:1400px;margin:28px auto 12px;padding:18px;text-align:center;background:#111827;color:white;border-radius:14px"><b>ZEREK Education</b><br>Жоба авторы: <b>ҚОҚАЙ ЖІГЕР</b><br><span style="opacity:.75">AI Мұғалім көмекшісі • Қазақстан мұғалімдеріне арналған көмекші құрал</span></footer></body></html>

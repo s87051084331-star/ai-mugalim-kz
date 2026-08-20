@@ -122,3 +122,37 @@ async def import_class(file: UploadFile = File(...)):
 def home(): return FileResponse(BASE/"index.html")
 
 app.mount("/static", StaticFiles(directory=BASE), name="static")
+
+from pydantic import BaseModel
+from fastapi import HTTPException
+from datetime import datetime
+import secrets
+SESSIONS={}
+class SessionStart(BaseModel):
+    class_name:str="Сынып"
+    topic:str="Сабақ"
+class CheckIn(BaseModel):
+    token:str
+    name:str
+    class_name:str
+@app.post("/api/session/start")
+def start_session(body:SessionStart):
+    token=secrets.token_urlsafe(6).replace("-","").replace("_","")[:8].upper()
+    SESSIONS[token]={"class_name":body.class_name,"topic":body.topic,"active":True,"attendance":{}}
+    return {"token":token,"class_name":body.class_name,"topic":body.topic}
+@app.post("/api/session/stop/{token}")
+def stop_session(token:str):
+    if token in SESSIONS:SESSIONS[token]["active"]=False
+    return {"ok":True}
+@app.post("/api/checkin")
+def checkin(body:CheckIn):
+    s=SESSIONS.get(body.token)
+    if not s or not s.get("active"):raise HTTPException(status_code=404,detail="QR-сабақ табылмады немесе аяқталған.")
+    key=(body.name.strip()+"|"+body.class_name.strip()).lower();now=datetime.now().strftime("%H:%M")
+    if key not in s["attendance"]:s["attendance"][key]={"name":body.name.strip(),"class_name":body.class_name.strip(),"time":now}
+    return {"ok":True,"time":s["attendance"][key]["time"]}
+@app.get("/api/session/{token}/attendance")
+def get_attendance(token:str):
+    s=SESSIONS.get(token)
+    if not s:raise HTTPException(status_code=404,detail="Сессия табылмады.")
+    return {"class_name":s["class_name"],"topic":s["topic"],"active":s["active"],"attendance":list(s["attendance"].values())}
