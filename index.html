@@ -9,7 +9,7 @@
 <div class="tabs" id="tabs"><button data-p="kmj" class="on">📘 ҚМЖ</button><button data-p="tasks">📝 HTML тапсырма</button><button data-p="class">👥 Сынып</button><button data-p="qr">📱 QR қатысу</button><button data-p="monitor">📹 Сабақ мониторингі</button><button data-p="oral">🎙️ Ауызша жауап</button><button data-p="analysis">🤖 Жеке талдау</button><button data-p="journal">📊 Журнал</button></div>
 
 <section id="kmj" class="panel on">
-<div class="card"><h2>📘 ҚМЖ-ны автоматты оқу</h2><div class="grid"><div><input id="kmjFile" type="file" accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv"><button class="blue" id="readKmj">ҚМЖ-ны оқу</button></div><div><label>AI-ға ескерту</label><textarea id="kmjHint" rows="3" placeholder="Мысалы: тек негізгі сабақ тапсырмаларын ал"></textarea></div></div><div id="kmjStatus" class="notice">ҚМЖ жүктелмеді.</div></div>
+<div class="card"><h2>📘 ҚМЖ-ны автоматты оқу</h2><div class="grid"><div><input id="kmjFile" type="file" accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv"><button class="blue" id="readKmj">ҚМЖ-ны оқу</button> <button class="gray" id="retryKmj">AI талдауын қайталау</button></div><div><label>AI-ға ескерту</label><textarea id="kmjHint" rows="3" placeholder="Мысалы: тек негізгі сабақ тапсырмаларын ал"></textarea></div></div><div id="kmjStatus" class="notice">ҚМЖ жүктелмеді.</div></div>
 <div class="card"><h2>ҚМЖ-дан анықталған сабақ</h2><div class="grid3"><div><label>Пән</label><input id="subject"></div><div><label>Сынып</label><input id="className"></div><div><label>Тақырып</label><input id="topic"></div></div><label>Оқу мақсаты</label><textarea id="objective" rows="3"></textarea><label>Сабақ мақсаты</label><textarea id="lessonGoal" rows="2"></textarea><button class="green" id="startLesson">Осы сабақты ағымдағы сабақ ету</button></div>
 <div class="card"><h2>ҚМЖ-дан табылған тапсырмалар</h2><div id="foundTasks" class="muted">Әзірге тапсырма жоқ.</div></div>
 </section>
@@ -51,7 +51,7 @@
 "use strict";
 const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let lesson=JSON.parse(localStorage.getItem("currentLesson")||"null")||{subject:"",class_name:"",topic:"",learning_objective:"",lesson_goal:"",tasks:[]};
-let generatedTasks=[],publishedCode="",students=JSON.parse(localStorage.getItem("students")||"[]"),attendance=JSON.parse(localStorage.getItem("attendance")||"{}"),qrToken="",qrPoll=null;
+let generatedTasks=[],publishedCode="",lastKmjText=sessionStorage.getItem("lastKmjText")||"",students=JSON.parse(localStorage.getItem("students")||"[]"),attendance=JSON.parse(localStorage.getItem("attendance")||"{}"),qrToken="",qrPoll=null;
 function save(){localStorage.setItem("currentLesson",JSON.stringify(lesson));localStorage.setItem("students",JSON.stringify(students));localStorage.setItem("attendance",JSON.stringify(attendance))}
 function tabs(){document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#tabs button").forEach(x=>x.classList.remove("on"));b.classList.add("on");document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));$(b.dataset.p).classList.add("on")})}
 function refreshIds(){students.forEach((s,i)=>s.id="ST"+String(i+1).padStart(2,"0"))}
@@ -62,22 +62,23 @@ function renderLesson(){
 function renderStudents(){refreshIds();$("studentBody").innerHTML=students.map((s,i)=>`<tr><td>${i+1}</td><td>${esc(s.name)}</td><td>${s.id}</td><td>${attendance[s.id]?"✅":"—"}</td><td>${s.taskResult?`${s.taskResult.score}/${s.taskResult.total}`:"—"}</td><td>${s.oral?"✅":"—"}</td><td><input value="${esc(s.teacherGrade||"")}" onchange="setGrade(${i},this.value)" style="width:80px"></td></tr>`).join("");["monitorStudent","oralStudent","analysisStudent"].forEach(id=>$(id).innerHTML=students.map((s,i)=>`<option value="${i}">${s.id} — ${esc(s.name)}</option>`).join(""));renderJournal();save()}
 window.setGrade=(i,v)=>{students[i].teacherGrade=v;save();renderJournal()}
 function renderJournal(){$("journalBody").innerHTML=students.map((s,i)=>{let pct=s.taskResult&&s.taskResult.total?Math.round(s.taskResult.score/s.taskResult.total*100):0;let goal=pct>=80?"Жетті":pct>=50?"Жартылай":"Дерек аз";let mon=s.monitor?`${s.monitor.seconds} сек / қозғалыс ${s.monitor.motion}%`:"—";return `<tr><td>${i+1}</td><td>${esc(s.name)}</td><td>${s.id}</td><td>${attendance[s.id]?"✅":"—"}</td><td>${s.taskResult?`${s.taskResult.score}/${s.taskResult.total}`:"—"}</td><td>${goal}</td><td>${mon}</td><td>${esc(s.teacherGrade||"—")}</td></tr>`}).join("")}
+async function analyzeKmjText(text){
+ $("kmjStatus").textContent="🤖 AI талдап жатыр. Қызмет бос емес болса, автоматты түрде қайталанады...";
+ let a=await fetch("/api/kmj/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text||"",hint:$("kmjHint").value,provider:$("aiProvider").value})});
+ let j=await a.json();if(!a.ok)throw Error(j.detail||"AI ҚМЖ-ны талдай алмады");
+ lesson={subject:j.data?.subject||"",class_name:j.data?.class_name||"",topic:j.data?.topic||"",learning_objective:j.data?.learning_objective||"",lesson_goal:j.data?.lesson_goal||"",tasks:Array.isArray(j.data?.tasks)?j.data.tasks:[]};
+ $("subject").value=lesson.subject;$("className").value=lesson.class_name;$("topic").value=lesson.topic;$("objective").value=lesson.learning_objective;$("lessonGoal").value=lesson.lesson_goal;
+ $("kmjStatus").innerHTML=`✅ ҚМЖ талданды. AI: <b>${esc(j.mode||$("aiProvider").value)}</b>${j.fallback?" • 🔁 резервтік AI қолданылды":""} • Тапсырма: <b>${lesson.tasks.length}</b>`;
+ $("foundTasks").innerHTML=lesson.tasks.length?lesson.tasks.map((t,i)=>`<div class="card"><b>${i+1}. ${esc(t.title||"Тапсырма")}</b><br>${esc(t.question||"")}<br><span class="muted">Дескриптор: ${esc(t.descriptor||"")}</span></div>`).join(""):"ҚМЖ-дан тапсырма табылмады.";
+ renderLesson();
+}
 $("readKmj").onclick=async()=>{
  let f=$("kmjFile").files[0];if(!f)return alert("ҚМЖ файлын таңдаңыз");
- let fd=new FormData();fd.append("file",f);$("kmjStatus").textContent="ҚМЖ оқылуда және AI талдап жатыр...";
- try{
-  let r=await fetch("/api/parse",{method:"POST",body:fd}),d=await r.json();
-  if(!r.ok)throw Error(d.detail||d.message||"Файл оқылмады");
-  let a=await fetch("/api/kmj/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:d.text||"",hint:$("kmjHint").value,provider:$("aiProvider").value})});
-  let j=await a.json();if(!a.ok)throw Error(j.detail||"AI ҚМЖ-ны талдай алмады");
-  if(!j.data||typeof j.data!=="object")throw Error("AI жауабында data құрылымы жоқ");
-  lesson={subject:j.data.subject||"",class_name:j.data.class_name||"",topic:j.data.topic||"",learning_objective:j.data.learning_objective||"",lesson_goal:j.data.lesson_goal||"",tasks:Array.isArray(j.data.tasks)?j.data.tasks:[]};
-  $("subject").value=lesson.subject;$("className").value=lesson.class_name;$("topic").value=lesson.topic;$("objective").value=lesson.learning_objective;$("lessonGoal").value=lesson.lesson_goal;
-  $("kmjStatus").innerHTML=`✅ ҚМЖ талданды. Режим: <b>${esc(j.mode||j.provider||$("aiProvider").value)}</b> • Тапсырма: <b>${lesson.tasks.length}</b>`;
-  $("foundTasks").innerHTML=lesson.tasks.length?lesson.tasks.map((t,i)=>`<div class="card"><b>${i+1}. ${esc(t.title||"Тапсырма")}</b><br>${esc(t.question||"")}<br><span class="muted">Дескриптор: ${esc(t.descriptor||"")}</span></div>`).join(""):"ҚМЖ-дан тапсырма табылмады.";
-  renderLesson();
- }catch(e){console.error(e);$("kmjStatus").textContent="❌ "+e.message}
+ let fd=new FormData();fd.append("file",f);$("kmjStatus").textContent="ҚМЖ файлы оқылуда...";
+ try{let r=await fetch("/api/parse",{method:"POST",body:fd}),d=await r.json();if(!r.ok)throw Error(d.detail||"Файл оқылмады");lastKmjText=d.text||"";sessionStorage.setItem("lastKmjText",lastKmjText);await analyzeKmjText(lastKmjText)}
+ catch(e){$("kmjStatus").textContent="❌ "+e.message}
 };
+$("retryKmj").onclick=async()=>{if(!lastKmjText)return alert("Алдымен ҚМЖ файлын бір рет оқытыңыз.");try{await analyzeKmjText(lastKmjText)}catch(e){$("kmjStatus").textContent="❌ "+e.message}};
 $("startLesson").onclick=()=>{lesson.subject=$("subject").value;lesson.class_name=$("className").value;lesson.topic=$("topic").value;lesson.learning_objective=$("objective").value;lesson.lesson_goal=$("lessonGoal").value;renderLesson();alert("Ағымдағы сабақ орнатылды.")};
 $("generateTasks").onclick=async()=>{
  if(!lesson||!Array.isArray(lesson.tasks))return $("publishInfo").textContent="❌ Алдымен ҚМЖ-ны AI арқылы талдаңыз.";
@@ -88,7 +89,7 @@ $("generateTasks").onclick=async()=>{
   let d=await r.json();if(!r.ok)throw Error(d.detail||"AI тапсырма жасай алмады");
   generatedTasks=(d.data&&Array.isArray(d.data.tasks))?d.data.tasks:[];
   if(!generatedTasks.length)throw Error("AI tasks массивін бос қайтарды");
-  renderTaskPreview();$("publishInfo").innerHTML=`✅ Тапсырма дайын. Режим: <b>${esc(d.mode||d.provider||$("aiProvider").value)}</b> • ${generatedTasks.length} тапсырма`;
+  renderTaskPreview();$("publishInfo").innerHTML=`✅ Тапсырма дайын. Режим: <b>${esc(d.mode||d.provider||$("aiProvider").value)}</b>${d.fallback?" • 🔁 резервтік AI қолданылды":""} • ${generatedTasks.length} тапсырма`;
  }catch(e){console.error(e);generatedTasks=[];$("publishInfo").textContent="❌ "+e.message}
 };
 function renderTaskPreview(){$("taskPreview").innerHTML=generatedTasks.map(t=>`<div class="card"><b>${t.id}. ${esc(t.question)}</b><br><span class="muted">Түрі: ${esc(t.type)} • Дескриптор: ${esc(t.descriptor)}</span></div>`).join("")||"Тапсырма жоқ."}
