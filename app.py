@@ -264,28 +264,45 @@ async def openai_text_json(prompt: str):
                     if c.get("type")=="output_text": chunks.append(c.get("text",""))
         return _json_from_text("\n".join(chunks))
 
+def _ai_err(provider,e):
+    code=e.status_code if isinstance(e,HTTPException) else 503
+    msg=str(e.detail if isinstance(e,HTTPException) else e).replace("\n"," ")[:700]
+    return {"provider":provider,"status":code,"message":msg}
+
 async def _retry_ai(provider: str, prompt: str, attempts: int=3):
-    last=None
+    errs=[]
     for n in range(attempts):
         try:
-            return await (openai_text_json(prompt) if provider=="openai" else gemini_text_json(prompt))
-        except HTTPException as e:
-            last=e
-            if e.status_code not in (429,500,502,503,504): raise
-            if n<attempts-1: await asyncio.sleep(2**n)
-    raise last or HTTPException(503,"AI уақытша қолжетімсіз.")
+            data=await (openai_text_json(prompt) if provider=="openai" else gemini_text_json(prompt))
+            return {"ok":True,"data":data,"attempts":n+1,"errors":errs}
+        except Exception as e:
+            x=_ai_err(provider,e);x["attempt"]=n+1;errs.append(x)
+            if x["status"] in (400,401,403,404): break
+            if n<attempts-1: await asyncio.sleep(1.5*(2**n))
+    return {"ok":False,"errors":errs}
 
 async def ai_json(provider: str, prompt: str):
     requested=(provider or "gemini").lower()
-    order=[requested]
-    if requested=="gemini" and os.getenv("OPENAI_API_KEY","").strip(): order.append("openai")
-    if requested=="openai" and os.getenv("GEMINI_API_KEY","").strip(): order.append("gemini")
+    if requested not in ("gemini","openai"): requested="gemini"
+    configured={"gemini":bool(os.getenv("GEMINI_API_KEY","").strip()),"openai":bool(os.getenv("OPENAI_API_KEY","").strip())}
+    other="openai" if requested=="gemini" else "gemini"
+    order=[requested]+([other] if configured[other] else [])
+    allerrs=[]
     for p in order:
-        try:
-            return {"provider_used":p,"fallback":p!=requested,"data":await _retry_ai(p,prompt)}
-        except HTTPException:
-            pass
-    raise HTTPException(503,"AI қызметі уақытша бос емес. Жүйе автоматты түрде 3 рет қайталап көрді. Біраздан соң «AI талдауын қайталау» батырмасын басыңыз.")
+        if not configured[p]:
+            allerrs.append({"provider":p,"status":400,"message":"API key жоқ","attempt":0});continue
+        r=await _retry_ai(p,prompt,3);allerrs+=r["errors"]
+        if r["ok"]:
+            return {"provider_used":p,"requested_provider":requested,"fallback":p!=requested,"attempts":r["attempts"],"data":r["data"]}
+    latest={}
+    for e in allerrs:latest[e["provider"]]=e
+    summary=" | ".join(f'{p}: HTTP {latest[p]["status"]} — {latest[p]["message"]}' for p in order if p in latest)
+    raise HTTPException(503,{"message":"AI провайдерлерінің екеуі де жауап бере алмады.","summary":summary,"errors":latest})
+
+
+@app.get("/api/ai/diagnostics")
+def ai_diagnostics():
+    return {"gemini":{"configured":bool(os.getenv("GEMINI_API_KEY","").strip()),"model":os.getenv("GEMINI_MODEL","gemini-3.6-flash")},"openai":{"configured":bool(os.getenv("OPENAI_API_KEY","").strip()),"model":os.getenv("OPENAI_MODEL","gpt-5.6")},"fallback":"selected -> retry x3 -> other provider -> retry x3"}
 
 @app.get("/api/ai/status")
 def ai_status():
@@ -380,7 +397,7 @@ tasks массиві: id, title, question, answer, descriptor, type.
         data=normalize_lesson(raw)
         if not any([data["subject"],data["class_name"],data["topic"],data["learning_objective"],data["tasks"]]):
             raise HTTPException(422,"AI жауап берді, бірақ ҚМЖ құрылымы анықталмады. ҚМЖ мәтіні/файлын тексеріңіз.")
-        return {"ok":True,"mode":ai["provider_used"],"provider":ai["provider_used"],"fallback":ai["fallback"],"data":data}
+        return {"ok":True,"mode":ai["provider_used"],"provider":ai["provider_used"],"fallback":ai["fallback"],"requested_provider":ai["requested_provider"],"attempts":ai["attempts"],"data":data}
     except HTTPException:
         raise
     except Exception as e:
@@ -409,7 +426,7 @@ type тек test, match, fill, truefalse, short.
         data=normalize_generated(raw)
         if not data["tasks"]:
             raise HTTPException(422,"AI тапсырма құрылымын қайтармады. ҚМЖ-дан тапсырма табылғанын және нұсқауды тексеріңіз.")
-        return {"ok":True,"mode":ai["provider_used"],"provider":ai["provider_used"],"fallback":ai["fallback"],"data":data}
+        return {"ok":True,"mode":ai["provider_used"],"provider":ai["provider_used"],"fallback":ai["fallback"],"requested_provider":ai["requested_provider"],"attempts":ai["attempts"],"data":data}
     except HTTPException:
         raise
     except Exception as e:
