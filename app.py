@@ -1,14 +1,128 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Response as FastAPIResponse
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 from pydantic import BaseModel
 from pathlib import Path
 from datetime import datetime, timedelta
 from io import BytesIO
-import io, os, csv, re, json, secrets, base64
+import io, os, csv, re, json, secrets, base64, sqlite3, hashlib, hmac
 
 app = FastAPI(title="AI Мұғалім көмекшісі — ZEREK Education")
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", secrets.token_hex(32)), same_site="lax", https_only=True)
 BASE = Path(__file__).parent
+
+
+# ---------------- Access control ----------------
+DB_PATH=os.getenv("AUTH_DB_PATH", str(BASE/"users.db"))
+
+def db():
+    c=sqlite3.connect(DB_PATH)
+    c.row_factory=sqlite3.Row
+    return c
+
+def hash_password(password, salt=None):
+    salt=salt or secrets.token_hex(16)
+    dk=hashlib.pbkdf2_hmac("sha256",password.encode(),salt.encode(),200000)
+    return salt+"$"+dk.hex()
+
+def verify_password(password, stored):
+    try:
+        salt,digest=stored.split("$",1)
+        return hmac.compare_digest(hash_password(password,salt).split("$",1)[1],digest)
+    except Exception:return False
+
+def init_auth():
+    c=db()
+    c.execute("""CREATE TABLE IF NOT EXISTS users(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      role TEXT NOT NULL DEFAULT 'teacher',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )""")
+    admin_email=os.getenv("ADMIN_EMAIL","").strip().lower()
+    admin_password=os.getenv("ADMIN_PASSWORD","").strip()
+    if admin_email and admin_password:
+        row=c.execute("SELECT id FROM users WHERE email=?",(admin_email,)).fetchone()
+        if row:
+            c.execute("UPDATE users SET role='admin',status='approved' WHERE email=?",(admin_email,))
+        else:
+            c.execute("INSERT INTO users(email,name,password_hash,status,role) VALUES(?,?,?,?,?)",
+                      (admin_email,"Administrator",hash_password(admin_password),"approved","admin"))
+    c.commit();c.close()
+
+init_auth()
+
+class RegisterBody(BaseModel):
+    email:str
+    name:str
+    password:str
+
+class LoginBody(BaseModel):
+    email:str
+    password:str
+
+class ApprovalBody(BaseModel):
+    user_id:int
+    approve:bool
+
+@app.post("/api/auth/register")
+def register(body:RegisterBody):
+    email=body.email.strip().lower()
+    if "@" not in email or len(body.password)<6 or not body.name.strip():
+        raise HTTPException(400,"Email, аты-жөні және кемінде 6 таңбалы құпиясөз қажет.")
+    c=db()
+    try:
+        c.execute("INSERT INTO users(email,name,password_hash,status,role) VALUES(?,?,?,?,?)",
+                  (email,body.name.strip(),hash_password(body.password),"pending","teacher"))
+        c.commit()
+    except sqlite3.IntegrityError:
+        raise HTTPException(409,"Бұл email бұрын тіркелген.")
+    finally:c.close()
+    return {"ok":True,"status":"pending"}
+
+@app.post("/api/auth/login")
+def login(body:LoginBody, request:Request):
+    c=db();u=c.execute("SELECT * FROM users WHERE email=?",(body.email.strip().lower(),)).fetchone();c.close()
+    if not u or not verify_password(body.password,u["password_hash"]):
+        raise HTTPException(401,"Email немесе құпиясөз қате.")
+    if u["status"]!="approved":
+        raise HTTPException(403,"Аккаунт әлі әкімші тарапынан мақұлданбаған.")
+    request.session["uid"]=u["id"]
+    return {"ok":True,"user":{"id":u["id"],"email":u["email"],"name":u["name"],"role":u["role"]}}
+
+@app.post("/api/auth/logout")
+def logout(request:Request):
+    request.session.clear();return {"ok":True}
+
+@app.get("/api/auth/me")
+def me(request:Request):
+    uid=request.session.get("uid")
+    if not uid:return {"authenticated":False}
+    c=db();u=c.execute("SELECT id,email,name,status,role FROM users WHERE id=?",(uid,)).fetchone();c.close()
+    if not u or u["status"]!="approved":return {"authenticated":False}
+    return {"authenticated":True,"user":dict(u)}
+
+def require_admin(request:Request):
+    uid=request.session.get("uid")
+    if not uid:raise HTTPException(401,"Кіру қажет.")
+    c=db();u=c.execute("SELECT role,status FROM users WHERE id=?",(uid,)).fetchone();c.close()
+    if not u or u["role"]!="admin" or u["status"]!="approved":raise HTTPException(403,"Әкімші рұқсаты қажет.")
+
+@app.get("/api/admin/users")
+def admin_users(request:Request):
+    require_admin(request)
+    c=db();rows=c.execute("SELECT id,email,name,status,role,created_at FROM users ORDER BY id DESC").fetchall();c.close()
+    return {"users":[dict(r) for r in rows]}
+
+@app.post("/api/admin/approve")
+def admin_approve(body:ApprovalBody, request:Request):
+    require_admin(request)
+    c=db();c.execute("UPDATE users SET status=? WHERE id=?",("approved" if body.approve else "rejected",body.user_id));c.commit();c.close()
+    return {"ok":True}
 
 # ---------------- File parsing ----------------
 def parse_file(name: str, data: bytes) -> str:

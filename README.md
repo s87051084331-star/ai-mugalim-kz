@@ -1,13 +1,18 @@
-# ZEREK Education — Vision Designer
+# ZEREK Education — 3 тіл + рұқсатпен кіру
 
-Дизайнерлік жұмыс парағы:
-- A4/A3 тік және көлденең
-- 16:9, 4:3, 1:1, 9:16, еркін өлшем
-- PNG/JPG/WebP үлгі сурет жүктеу
-- Gemini немесе OpenAI Vision арқылы үлгінің визуалдық құрылымын талдау
-- Үлгідегі мәтінді көшірмей, layout/palette/card style сипаттарын жаңа ҚМЖ тапсырмаларына қолдану
-- Мұғалімнің еркін дизайн нұсқауы
-- оқушы нұсқасы / жауап кілті
-- PNG, print/PDF, fullscreen
+Қосылды:
+- Қазақша / Русский / English тіл ауыстырғыш
+- Email + құпиясөз арқылы тіркелу
+- Жаңа аккаунт `pending`
+- Тек admin мақұлдағаннан кейін кіру
+- Admin панелі: рұқсат беру / бас тарту
+- Қауіпсіз PBKDF2 пароль хэші және signed session cookie
 
-API кілттері Render Environment ішінде қалады.
+Render Environment Variables міндетті:
+- `ADMIN_EMAIL` = сіздің әкімші email
+- `ADMIN_PASSWORD` = әкімші құпиясөзі
+- `SESSION_SECRET` = ұзын кездейсоқ құпия жол
+
+Маңызды:
+Бұл нұсқа SQLite қолданады. Render-дің ephemeral filesystem режимінде база restart/deploy кезінде жоғалуы мүмкін.
+Тұрақты production үшін PostgreSQL/Firebase сияқты тұрақты базаға көшіру керек.
