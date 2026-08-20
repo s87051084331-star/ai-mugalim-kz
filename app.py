@@ -151,6 +151,67 @@ def ai_status():
         "openai_model": os.getenv("OPENAI_MODEL","gpt-5.6")
     }
 
+
+def _pick(d, *keys, default=""):
+    if not isinstance(d, dict): return default
+    for k in keys:
+        v=d.get(k)
+        if v not in (None,"",[],{}): return v
+    return default
+
+def normalize_task(t, i):
+    if not isinstance(t, dict):
+        t={"question":str(t)}
+    options=_pick(t,"options","choices","variants",default=[])
+    if not isinstance(options,list): options=[]
+    return {
+        "id": _pick(t,"id","number","task_number",default=i),
+        "title": str(_pick(t,"title","name",default=f"{i}-тапсырма")),
+        "question": str(_pick(t,"question","task","text","prompt",default="")),
+        "answer": str(_pick(t,"answer","correct_answer","correctAnswer",default="")),
+        "correct_answer": str(_pick(t,"correct_answer","correctAnswer","answer",default="")),
+        "descriptor": str(_pick(t,"descriptor","descriptors","criterion","criteria",default="")),
+        "type": str(_pick(t,"type","format",default="short")),
+        "options": options,
+        "max_score": _pick(t,"max_score","maxScore","score",default=1)
+    }
+
+def normalize_lesson(raw):
+    # Accept wrappers commonly returned by models.
+    if isinstance(raw, list):
+        raw={"tasks":raw}
+    if not isinstance(raw, dict):
+        raw={}
+    for wrapper in ("data","lesson","result","analysis"):
+        if isinstance(raw.get(wrapper),dict):
+            merged=dict(raw)
+            inner=merged.pop(wrapper)
+            raw={**merged,**inner}
+            break
+    tasks=_pick(raw,"tasks","assignments","exercises","questions",default=[])
+    if isinstance(tasks,dict): tasks=list(tasks.values())
+    if not isinstance(tasks,list): tasks=[]
+    return {
+        "subject": str(_pick(raw,"subject","subject_name"," пән","пән",default="")),
+        "class_name": str(_pick(raw,"class_name","class","grade","сынып",default="")),
+        "topic": str(_pick(raw,"topic","lesson_topic","title","тақырып",default="")),
+        "learning_objective": str(_pick(raw,"learning_objective","learningObjective","learning_objectives","оқу мақсаты",default="")),
+        "lesson_goal": str(_pick(raw,"lesson_goal","lessonGoal","lesson_objective","сабақ мақсаты",default="")),
+        "tasks": [normalize_task(t,i+1) for i,t in enumerate(tasks)]
+    }
+
+def normalize_generated(raw):
+    if isinstance(raw,list): raw={"tasks":raw}
+    if not isinstance(raw,dict): raw={}
+    for wrapper in ("data","result","lesson"):
+        if isinstance(raw.get(wrapper),dict):
+            raw={**raw,**raw[wrapper]}
+            break
+    tasks=_pick(raw,"tasks","assignments","exercises","questions",default=[])
+    if isinstance(tasks,dict): tasks=list(tasks.values())
+    if not isinstance(tasks,list): tasks=[]
+    return {"tasks":[normalize_task(t,i+1) for i,t in enumerate(tasks)]}
+
 class KmjAnalyze(BaseModel):
     text: str
     hint: str = ""
@@ -166,8 +227,11 @@ tasks массиві: id, title, question, answer, descriptor, type.
 ҚМЖ:
 {body.text[:50000]}"""
     try:
-        data=await ai_json(body.provider,prompt)
-        return {"mode":body.provider,"data":data}
+        raw=await ai_json(body.provider,prompt)
+        data=normalize_lesson(raw)
+        if not any([data["subject"],data["class_name"],data["topic"],data["learning_objective"],data["tasks"]]):
+            raise HTTPException(422,"AI жауап берді, бірақ ҚМЖ құрылымы анықталмады. ҚМЖ мәтіні/файлын тексеріңіз.")
+        return {"ok":True,"mode":body.provider,"provider":body.provider,"data":data}
     except HTTPException:
         raise
     except Exception as e:
@@ -191,8 +255,11 @@ type тек test, match, fill, truefalse, short.
 ҚМЖ дерегі:
 {json.dumps(body.lesson,ensure_ascii=False)[:40000]}"""
     try:
-        data=await ai_json(body.provider,prompt)
-        return {"mode":body.provider,"data":data}
+        raw=await ai_json(body.provider,prompt)
+        data=normalize_generated(raw)
+        if not data["tasks"]:
+            raise HTTPException(422,"AI тапсырма құрылымын қайтармады. ҚМЖ-дан тапсырма табылғанын және нұсқауды тексеріңіз.")
+        return {"ok":True,"mode":body.provider,"provider":body.provider,"data":data}
     except HTTPException:
         raise
     except Exception as e:

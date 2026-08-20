@@ -1,13 +1,10 @@
-# AI Мұғалім көмекшісі — Gemini + OpenAI
+# AI Мұғалім көмекшісі — JSON fix
 
-Render Environment Variables ішіне кемінде біреуін қосыңыз:
+Түзетілді:
+- Gemini/OpenAI жауаптары бір стандартты JSON құрылымына келтіріледі.
+- `mode: undefined` жойылды.
+- `Cannot read properties of undefined (reading 'tasks')` қорғалды.
+- ҚМЖ талданған соң пән, сынып, тақырып, оқу мақсаты, сабақ мақсаты автоматты толтырылады.
+- HTML тапсырма жасау алдында tasks бар-жоғы тексеріледі.
 
-- `GEMINI_API_KEY`
-- `OPENAI_API_KEY`
-
-Қосымша:
-- `GEMINI_MODEL=gemini-2.5-flash`
-- `OPENAI_MODEL=gpt-5.6`
-- `OPENAI_TRANSCRIBE_MODEL=gpt-4o-mini-transcribe`
-
-API кілттерін GitHub файлына жазбаңыз.
+Render Environment ішінде `GEMINI_API_KEY` немесе `OPENAI_API_KEY` болуы керек.
