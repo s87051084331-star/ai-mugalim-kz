@@ -494,6 +494,12 @@ def checkin(body:CheckIn):
 def session_attendance(token:str):
     s=qs(token);return {"class_name":s["class_name"],"topic":s["topic"],"active":s["active"],"attendance":list(s["attendance"].values())}
 
+@app.get("/favicon.png", include_in_schema=False)
+def favicon(): return FileResponse(BASE/"favicon.png")
+
+@app.get("/zerek-logo.png", include_in_schema=False)
+def zerek_logo(): return FileResponse(BASE/"zerek-logo.png")
+
 @app.get("/")
 def home():return FileResponse(BASE/"index.html")
 app.mount("/static",StaticFiles(directory=BASE),name="static")
