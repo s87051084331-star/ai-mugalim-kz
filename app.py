@@ -133,21 +133,6 @@ def init_db():
               created_at TIMESTAMPTZ DEFAULT NOW(),
               UNIQUE(class_id,name)
             )""")
-            cur.execute("""CREATE TABLE IF NOT EXISTS class_results(
-              id BIGSERIAL PRIMARY KEY,
-              class_id BIGINT REFERENCES teacher_classes(id) ON DELETE CASCADE,
-              student_id BIGINT REFERENCES class_students(id) ON DELETE CASCADE,
-              subject TEXT DEFAULT '', topic TEXT DEFAULT '', learning_objective TEXT DEFAULT '',
-              quarter TEXT DEFAULT '', score NUMERIC DEFAULT 0, max_score NUMERIC DEFAULT 0,
-              percent NUMERIC DEFAULT 0, created_at TIMESTAMPTZ DEFAULT NOW()
-            )""")
-            cur.execute("""CREATE TABLE IF NOT EXISTS class_reflections(
-              id BIGSERIAL PRIMARY KEY,
-              class_id BIGINT REFERENCES teacher_classes(id) ON DELETE CASCADE,
-              student_id BIGINT REFERENCES class_students(id) ON DELETE CASCADE,
-              topic TEXT DEFAULT '', level TEXT DEFAULT '', note TEXT DEFAULT '',
-              created_at TIMESTAMPTZ DEFAULT NOW()
-            )""")
             cur.execute("""CREATE TABLE IF NOT EXISTS ai_usage(
               id BIGSERIAL PRIMARY KEY,
               user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -603,33 +588,16 @@ def zerek_class_add(body:ZerekClassBody,request:Request):
 class ZerekStudentBody(BaseModel):
     name:str
 
-class ZerekResultBody(BaseModel):
-    student_id:int
-    subject:str=""
-    topic:str=""
-    learning_objective:str=""
-    quarter:str=""
-    score:float=0
-    max_score:float=0
-
-class ZerekReflectionBody(BaseModel):
-    student_id:int
-    topic:str=""
-    level:str=""
-    note:str=""
-
-def _owned_class(cur,class_id,user_id):
-    cur.execute("SELECT * FROM teacher_classes WHERE id=%s AND user_id=%s",(class_id,user_id))
-    x=cur.fetchone()
-    if not x: raise HTTPException(404,"Сынып табылмады.")
-    return x
+def _zerek_owned_class(cur,class_id,user_id):
+    cur.execute("SELECT id FROM teacher_classes WHERE id=%s AND user_id=%s",(class_id,user_id))
+    if not cur.fetchone(): raise HTTPException(404,"Сынып табылмады.")
 
 @app.get("/api/zerek/classes/{class_id}/students")
 def zerek_class_students(class_id:int,request:Request):
     u=auth_user(request)
     with db() as c:
         with c.cursor() as cur:
-            _owned_class(cur,class_id,u["id"])
+            _zerek_owned_class(cur,class_id,u["id"])
             cur.execute("SELECT * FROM class_students WHERE class_id=%s ORDER BY name",(class_id,))
             rows=cur.fetchall()
     return {"items":rows}
@@ -637,12 +605,12 @@ def zerek_class_students(class_id:int,request:Request):
 @app.post("/api/zerek/classes/{class_id}/students")
 def zerek_class_student_add(class_id:int,body:ZerekStudentBody,request:Request):
     u=auth_user(request);name=body.name.strip()
-    if not name:raise HTTPException(400,"Оқушы аты-жөні қажет.")
+    if not name: raise HTTPException(400,"Оқушы аты-жөні қажет.")
     with db() as c:
         with c.cursor() as cur:
-            _owned_class(cur,class_id,u["id"])
+            _zerek_owned_class(cur,class_id,u["id"])
             cur.execute("""INSERT INTO class_students(class_id,name) VALUES(%s,%s)
-              ON CONFLICT(class_id,name) DO UPDATE SET name=EXCLUDED.name RETURNING id""",(class_id,name))
+            ON CONFLICT(class_id,name) DO UPDATE SET name=EXCLUDED.name RETURNING id""",(class_id,name))
             sid=cur.fetchone()["id"]
             cur.execute("UPDATE class_students SET student_code=%s WHERE id=%s",("ST"+str(sid).zfill(4),sid))
     return {"ok":True,"id":sid}
@@ -652,7 +620,7 @@ def zerek_class_student_delete(class_id:int,student_id:int,request:Request):
     u=auth_user(request)
     with db() as c:
         with c.cursor() as cur:
-            _owned_class(cur,class_id,u["id"])
+            _zerek_owned_class(cur,class_id,u["id"])
             cur.execute("DELETE FROM class_students WHERE id=%s AND class_id=%s",(student_id,class_id))
     return {"ok":True}
 
@@ -661,54 +629,13 @@ async def zerek_class_import(class_id:int,request:Request,file:UploadFile=File(.
     u=auth_user(request);data=await file.read();names=parse_class(file.filename,data)
     with db() as c:
         with c.cursor() as cur:
-            _owned_class(cur,class_id,u["id"])
+            _zerek_owned_class(cur,class_id,u["id"])
             for name in names:
-                cur.execute("""INSERT INTO class_students(class_id,name) VALUES(%s,%s)
-                  ON CONFLICT(class_id,name) DO NOTHING""",(class_id,name))
+                cur.execute("INSERT INTO class_students(class_id,name) VALUES(%s,%s) ON CONFLICT(class_id,name) DO NOTHING",(class_id,name))
             cur.execute("SELECT id FROM class_students WHERE class_id=%s AND (student_code='' OR student_code IS NULL)",(class_id,))
             for row in cur.fetchall():
                 cur.execute("UPDATE class_students SET student_code=%s WHERE id=%s",("ST"+str(row["id"]).zfill(4),row["id"]))
     return {"ok":True,"count":len(names)}
-
-@app.post("/api/zerek/classes/{class_id}/results")
-def zerek_result_add(class_id:int,body:ZerekResultBody,request:Request):
-    u=auth_user(request)
-    pct=round((body.score/body.max_score*100),2) if body.max_score else 0
-    with db() as c:
-        with c.cursor() as cur:
-            _owned_class(cur,class_id,u["id"])
-            cur.execute("""INSERT INTO class_results(class_id,student_id,subject,topic,learning_objective,quarter,score,max_score,percent)
-              VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
-              (class_id,body.student_id,body.subject,body.topic,body.learning_objective,body.quarter,body.score,body.max_score,pct))
-            rid=cur.fetchone()["id"]
-    return {"ok":True,"id":rid,"percent":pct}
-
-@app.get("/api/zerek/classes/{class_id}/summary")
-def zerek_class_summary(class_id:int,request:Request,quarter:str=""):
-    u=auth_user(request)
-    with db() as c:
-        with c.cursor() as cur:
-            _owned_class(cur,class_id,u["id"])
-            vals=[class_id];where="r.class_id=%s"
-            if quarter:where+=" AND r.quarter=%s";vals.append(quarter)
-            cur.execute(f"""SELECT s.id,s.name,COUNT(r.id) lessons,
-              COALESCE(ROUND(AVG(r.percent),1),0) avg_percent
-              FROM class_students s LEFT JOIN class_results r ON r.student_id=s.id AND {where}
-              WHERE s.class_id=%s GROUP BY s.id,s.name ORDER BY s.name""",vals+[class_id])
-            rows=cur.fetchall()
-    return {"items":rows}
-
-@app.post("/api/zerek/classes/{class_id}/reflection")
-def zerek_reflection_add(class_id:int,body:ZerekReflectionBody,request:Request):
-    u=auth_user(request)
-    with db() as c:
-        with c.cursor() as cur:
-            _owned_class(cur,class_id,u["id"])
-            cur.execute("""INSERT INTO class_reflections(class_id,student_id,topic,level,note)
-              VALUES(%s,%s,%s,%s,%s) RETURNING id""",(class_id,body.student_id,body.topic,body.level,body.note))
-            rid=cur.fetchone()["id"]
-    return {"ok":True,"id":rid}
-
 
 @app.post("/api/zerek/community-kmj")
 def zerek_community_publish(body:ArchiveSaveBody,request:Request):
