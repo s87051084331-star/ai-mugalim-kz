@@ -103,6 +103,28 @@ def init_db():
               note TEXT DEFAULT '',
               created_at TIMESTAMPTZ DEFAULT NOW()
             )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS zerek_task_bank(
+              id BIGSERIAL PRIMARY KEY,
+              user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+              subject TEXT NOT NULL, grade TEXT DEFAULT '', learning_objective TEXT DEFAULT '',
+              title TEXT NOT NULL, task_text TEXT NOT NULL, level TEXT DEFAULT 'A',
+              points INTEGER DEFAULT 1, descriptor TEXT DEFAULT '', answer_key TEXT DEFAULT '',
+              is_public BOOLEAN DEFAULT TRUE, created_at TIMESTAMPTZ DEFAULT NOW()
+            )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS community_kmj(
+              id BIGSERIAL PRIMARY KEY,
+              user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+              title TEXT NOT NULL, subject TEXT DEFAULT '', class_name TEXT DEFAULT '',
+              learning_objective TEXT DEFAULT '', kmj_json JSONB NOT NULL,
+              is_public BOOLEAN DEFAULT TRUE, created_at TIMESTAMPTZ DEFAULT NOW()
+            )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS teacher_classes(
+              id BIGSERIAL PRIMARY KEY,
+              user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+              name TEXT NOT NULL, school_year TEXT DEFAULT '',
+              created_at TIMESTAMPTZ DEFAULT NOW(),
+              UNIQUE(user_id,name,school_year)
+            )""")
             cur.execute("""CREATE TABLE IF NOT EXISTS ai_usage(
               id BIGSERIAL PRIMARY KEY,
               user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -289,6 +311,14 @@ async def generate_kmj130(body:KmjGenerateBody,request:Request):
 Жоғарғы мәліметтер: пән, сынып, бөлім, сабақ тақырыбы, оқу мақсаты, сабақ мақсаты.
 Құндылық және Аптаның дәйексөзі — мұғалім енгізген мәтінді өзгеріссіз сақта.
 Мұғалім берген ресурстарды орынды кезеңдерге орналастыр, бірақ жаңа URL ойдан шығарма.
+ПӘНГЕ БЕЙІМДЕУ МІНДЕТТІ:
+- Математика/Алгебра/Геометрияда "есеп шығарады" деп жалпылама жазба: есептің нақты шартын, өрнегін немесе теңдеуін толық бер.
+- Физикада нақты есеп, формула, өлшем бірліктерін; химияда теңдеу/есеп/тәжірибені; тіл пәндерінде оқылым/жазылым/айтылым тапсырмаларын нақты бер.
+- Сабақ ортасында кемінде A/B/C деңгейлерін қамтитын нақты тапсырмалар болсын.
+- Әр тапсырманың дескрипторы мен баллы бағалау бағанында анық көрсетілсін.
+- Мұғалімге арналған жауап кілтін resources немесе teacher_action ішінде "Жауап кілті:" деп белгіле.
+- Сабақ соңында нақты бекіту тапсырмасы, рефлексия және нақты үй тапсырмасы міндетті болсын.
+- Уақыттардың қосындысы берілген сабақ ұзақтығына сәйкес келсін.
 Тек JSON қайтар:
 {{"subject":"","class_name":"","section":"","topic":"","learning_objective":"","lesson_goal":"",
 "value":"","weekly_quote":"","duration":45,
@@ -466,6 +496,95 @@ def admin_payment_approve(body:PaymentApproveBody,request:Request):
     return {"ok":True,"status":"approved"}
 
 
+
+
+class ZerekTaskBankBody(BaseModel):
+    subject:str; grade:str=""; learning_objective:str=""; title:str; task_text:str
+    level:str="A"; points:int=1; descriptor:str=""; answer_key:str=""
+
+class ZerekClassBody(BaseModel):
+    name:str; school_year:str=""
+
+@app.get("/api/zerek/task-bank")
+def zerek_task_bank(request:Request,subject:str="",grade:str="",q:str=""):
+    auth_user(request)
+    sql="""SELECT b.*,u.name AS author_name FROM zerek_task_bank b LEFT JOIN users u ON u.id=b.user_id WHERE b.is_public=TRUE"""
+    vals=[]
+    if subject: sql+=" AND LOWER(b.subject)=LOWER(%s)";vals.append(subject)
+    if grade: sql+=" AND b.grade=%s";vals.append(grade)
+    if q: sql+=" AND (b.title ILIKE %s OR b.task_text ILIKE %s OR b.learning_objective ILIKE %s)";vals += ["%"+q+"%"]*3
+    sql+=" ORDER BY b.id DESC LIMIT 100"
+    with db() as c:
+        with c.cursor() as cur:cur.execute(sql,vals);rows=cur.fetchall()
+    return {"items":rows}
+
+@app.post("/api/zerek/task-bank")
+def zerek_task_bank_add(body:ZerekTaskBankBody,request:Request):
+    u=auth_user(request)
+    if not body.title.strip() or not body.task_text.strip():raise HTTPException(400,"Тапсырма атауы мен мәтіні қажет.")
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""INSERT INTO zerek_task_bank(user_id,subject,grade,learning_objective,title,task_text,level,points,descriptor,answer_key)
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",(u["id"],body.subject,body.grade,body.learning_objective,body.title,body.task_text,body.level,max(1,body.points),body.descriptor,body.answer_key))
+            rid=cur.fetchone()["id"]
+    return {"ok":True,"id":rid}
+
+@app.get("/api/zerek/community-kmj")
+def zerek_community_kmj(request:Request,subject:str="",grade:str="",q:str=""):
+    auth_user(request)
+    sql="""SELECT k.id,k.title,k.subject,k.class_name,k.learning_objective,k.created_at,u.name AS author_name
+    FROM community_kmj k LEFT JOIN users u ON u.id=k.user_id WHERE k.is_public=TRUE"""
+    vals=[]
+    if subject:sql+=" AND LOWER(k.subject)=LOWER(%s)";vals.append(subject)
+    if grade:sql+=" AND k.class_name=%s";vals.append(grade)
+    if q:sql+=" AND (k.title ILIKE %s OR k.learning_objective ILIKE %s)";vals += ["%"+q+"%"]*2
+    sql+=" ORDER BY k.id DESC LIMIT 100"
+    with db() as c:
+        with c.cursor() as cur:cur.execute(sql,vals);rows=cur.fetchall()
+    return {"items":rows}
+
+@app.post("/api/zerek/community-kmj/{item_id}/copy")
+def zerek_community_copy(item_id:int,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("SELECT * FROM community_kmj WHERE id=%s AND is_public=TRUE",(item_id,));x=cur.fetchone()
+            if not x:raise HTTPException(404,"ҚМЖ табылмады.")
+            cur.execute("""INSERT INTO lesson_archive(user_id,title,subject,class_name,learning_objective,kmj_json)
+            VALUES(%s,%s,%s,%s,%s,%s) RETURNING id""",(u["id"],x["title"],x["subject"],x["class_name"],x["learning_objective"],json.dumps(x["kmj_json"],ensure_ascii=False) if not isinstance(x["kmj_json"],str) else x["kmj_json"]))
+            rid=cur.fetchone()["id"]
+    return {"ok":True,"id":rid}
+
+@app.get("/api/zerek/classes")
+def zerek_classes(request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""SELECT c.*,0 AS student_count FROM teacher_classes c WHERE c.user_id=%s ORDER BY c.name""",(u["id"],));rows=cur.fetchall()
+    return {"items":rows}
+
+@app.post("/api/zerek/classes")
+def zerek_class_add(body:ZerekClassBody,request:Request):
+    u=auth_user(request)
+    if not body.name.strip():raise HTTPException(400,"Сынып атауын енгізіңіз.")
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""INSERT INTO teacher_classes(user_id,name,school_year) VALUES(%s,%s,%s)
+            ON CONFLICT(user_id,name,school_year) DO UPDATE SET name=EXCLUDED.name RETURNING id""",(u["id"],body.name.strip(),body.school_year.strip()))
+            rid=cur.fetchone()["id"]
+    return {"ok":True,"id":rid}
+
+
+
+@app.post("/api/zerek/community-kmj")
+def zerek_community_publish(body:ArchiveSaveBody,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""INSERT INTO community_kmj(user_id,title,subject,class_name,learning_objective,kmj_json)
+            VALUES(%s,%s,%s,%s,%s,%s) RETURNING id""",(u["id"],body.title,body.subject,body.class_name,body.learning_objective,json.dumps(body.kmj,ensure_ascii=False)))
+            rid=cur.fetchone()["id"]
+    return {"ok":True,"id":rid}
 
 @app.post("/api/kmj/export-docx")
 def export_kmj_docx(body:ArchiveSaveBody,request:Request):

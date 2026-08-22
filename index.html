@@ -26,17 +26,102 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 </script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<style>
+.zerek-hub{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.zerek-module{border:1px solid #dbeafe;background:linear-gradient(145deg,#fff,#f4f8ff);border-radius:18px;padding:18px;cursor:pointer;transition:.18s}
+.zerek-module:hover{transform:translateY(-2px);box-shadow:0 10px 26px #1d4ed81a}
+.zerek-module .ico{font-size:34px}.zerek-module h3{margin:8px 0}.zerek-module p{color:#64748b;line-height:1.45}
+.subject-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.subject-card{border:1px solid #cbd5e1;border-radius:16px;padding:18px;background:#fff;cursor:pointer}
+.subject-card:hover{border-color:#2563eb;background:#eff6ff}
+.subject-card b{font-size:18px}
+.bank-card{border-left:5px solid #2563eb}
+.kmj-pro{background:linear-gradient(135deg,#eff6ff,#fff);border:1px solid #bfdbfe}
+.zerek-chip{display:inline-block;padding:5px 9px;border-radius:999px;background:#e0e7ff;color:#3730a3;font-size:12px;font-weight:700;margin:2px}
+.big-action{font-size:17px;padding:14px 20px}
+</style>
+
 </head><body>
 <header><div class="brand-head"><img src="/zerek-logo.png" class="brand-logo" alt="ZEREK Education"><div><h1>AI Мұғалім көмекшісі</h1><div><b>ZEREK Education</b> • Қазақстан мұғалімдеріне арналған көмекші құрал</div></div></div><div><b>Жоба авторы: ҚОҚАЙ ЖІГЕР</b></div><div style="display:flex;gap:8px;align-items:center"><select id="langSelect" style="width:auto;margin:0"><option value="kk">Қазақша</option><option value="ru">Русский</option><option value="en">English</option></select><button id="installPwaBtn" class="blue" style="display:none">📲 Орнату</button><button id="logoutBtn" class="gray" style="display:none">Шығу</button></div></header>
 <div class="wrap">
 <div class="card" style="padding:14px 18px"><div class="grid"><div><label>🤖 AI провайдері</label><select id="aiProvider"><option value="auto">Автоматты</option><option value="gemini">Google Gemini</option><option value="openai">OpenAI (ChatGPT модельдері)</option></select></div><div><label>AI күйі</label><div id="aiStatus" class="notice">Тексерілуде...</div></div></div></div><div class="card"><h2>👤 Менің AI лимитім</h2><div class="grid"><div><label>AI таңдау</label><select id="myAiProvider"><option value="auto">Автоматты</option><option value="openai">OpenAI</option><option value="gemini">Gemini</option></select></div><div id="myAiUsage" class="notice">Жүктелуде...</div></div><button class="blue" id="saveMyAi">Сақтау</button></div><div id="lessonBar" class="lessonbar"><b>📚 Ағымдағы сабақ:</b> әлі басталмаған.</div>
-<div class="tabs" id="tabs"><button data-p="kmj" class="on">📘 ҚМЖ</button><button data-p="kmjbuilder">📝 ҚМЖ құрастыру</button><button data-p="archive">📚 Менің архивім</button><button data-p="myresources">📎 Менің ресурстарым</button><button data-p="slides">📊 ҚМЖ → Слайд</button><button data-p="tasks">📝 HTML тапсырма</button><button data-p="images">🖼 ҚМЖ суреттері</button><button data-p="grouping">🎲 Топқа бөлу</button><button data-p="groups">👥 Топтық жұмыс</button><button data-p="screen">🖥 Экран режимі</button><button data-p="resources">🔗 Сыртқы ресурстар</button><button data-p="class">👥 Сынып</button><button data-p="qr">📱 QR қатысу</button><button data-p="monitor">📹 Сабақ мониторингі</button><button data-p="oral">🎙️ Ауызша жауап</button><button data-p="analysis">🤖 Жеке талдау</button><button data-p="journal">📊 Журнал</button><button data-p="packages">💳 Менің пакетім</button><button data-p="admin" id="adminTab" style="display:none">🔐 Рұқсаттар</button></div>
+<div class="tabs" id="tabs"><button data-p="dashboard" class="on">🏠 Басты панель</button><button data-p="subjects">📚 Пәндер</button><button data-p="kmjcenter">📘 ҚМЖ орталығы</button><button data-p="taskbank">🧩 Тапсырмалар банкі</button><button data-p="community">🌐 Ортақ база</button><button data-p="myclasses">👥 Менің сыныптарым</button><button data-p="kmj">📘 ҚМЖ</button><button data-p="kmjbuilder">📝 ҚМЖ құрастыру</button><button data-p="archive">📚 Менің архивім</button><button data-p="myresources">📎 Менің ресурстарым</button><button data-p="slides">📊 ҚМЖ → Слайд</button><button data-p="tasks">📝 HTML тапсырма</button><button data-p="images">🖼 ҚМЖ суреттері</button><button data-p="grouping">🎲 Топқа бөлу</button><button data-p="groups">👥 Топтық жұмыс</button><button data-p="screen">🖥 Экран режимі</button><button data-p="resources">🔗 Сыртқы ресурстар</button><button data-p="class">👥 Сынып</button><button data-p="qr">📱 QR қатысу</button><button data-p="monitor">📹 Сабақ мониторингі</button><button data-p="oral">🎙️ Ауызша жауап</button><button data-p="analysis">🤖 Жеке талдау</button><button data-p="journal">📊 Журнал</button><button data-p="packages">💳 Менің пакетім</button><button data-p="admin" id="adminTab" style="display:none">🔐 Рұқсаттар</button></div>
+
+
+<section id="dashboard" class="panel on">
+ <div class="card kmj-pro">
+  <h2>✨ ZEREK Education — Мұғалімнің цифрлық жұмыс орталығы</h2>
+  <p class="muted">Пәнді таңдаңыз → ҚМЖ құрыңыз → дайын тапсырманы қосыңыз → сыныпқа өткізіңіз → нәтижені сақтаңыз.</p>
+  <div class="zerek-hub">
+   <div class="zerek-module" onclick="openZerek('subjects')"><div class="ico">📚</div><h3>Пәндер</h3><p>Әр пәнге жеке әдістемелік логика.</p></div>
+   <div class="zerek-module" onclick="openZerek('kmjcenter')"><div class="ico">📘</div><h3>ҚМЖ орталығы</h3><p>Нақты тапсырма, дескриптор, балл, рефлексия.</p></div>
+   <div class="zerek-module" onclick="openZerek('taskbank')"><div class="ico">🧩</div><h3>Тапсырмалар банкі</h3><p>Дайын есептер мен пәндік тапсырмалар.</p></div>
+   <div class="zerek-module" onclick="openZerek('community')"><div class="ico">🌐</div><h3>Ортақ база</h3><p>Мұғалімдер жариялаған ҚМЖ және тапсырмалар.</p></div>
+   <div class="zerek-module" onclick="openZerek('myclasses')"><div class="ico">👥</div><h3>Менің сыныптарым</h3><p>Сыныптарды бөлек сақтау және басқару.</p></div>
+  </div>
+ </div>
+</section>
+
+<section id="subjects" class="panel">
+ <div class="card"><h2>📚 Пәндер</h2><p class="muted">Пәнді таңдағанда ҚМЖ мен тапсырмалар сол пәннің ерекшелігіне бейімделеді.</p>
+ <div id="subjectGrid" class="subject-grid"></div></div>
+</section>
+
+<section id="kmjcenter" class="panel">
+ <div class="card kmj-pro">
+  <h2>📘 ҚМЖ орталығы</h2>
+  <div class="grid3">
+   <div><label>Пән</label><select id="hubSubject"></select></div>
+   <div><label>Сынып</label><select id="hubGrade"><option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option></select></div>
+   <div><label>Тоқсан</label><select id="hubQuarter"><option>I тоқсан</option><option>II тоқсан</option><option>III тоқсан</option><option>IV тоқсан</option></select></div>
+  </div>
+  <label>Бөлім</label><input id="hubSection" placeholder="Бөлім атауы">
+  <label>Сабақ тақырыбы</label><input id="hubTopic" placeholder="Сабақ тақырыбы">
+  <label>Оқу мақсаты</label><textarea id="hubObjective" rows="2" placeholder="Мысалы: 7.1.2.3 ..."></textarea>
+  <div class="notice"><b>Сапа стандарты:</b> нақты тапсырмалар • A/B/C деңгей • дескриптор • балл • жауап кілті • рефлексия • үй жұмысы.</div><br>
+  <button class="green big-action" onclick="sendToKmjBuilder()">🤖 Сапалы ҚМЖ құрастыру</button>
+  <button class="blue big-action" onclick="searchBankFromKmj()">🧩 Дайын тапсырма іздеу</button>
+ </div>
+</section>
+
+<section id="taskbank" class="panel">
+ <div class="card"><h2>🧩 Пәндік тапсырмалар банкі</h2>
+  <div class="grid3"><select id="bankSubject"></select><input id="bankGrade" placeholder="Сынып, мысалы 7"><input id="bankSearch" placeholder="Тақырып немесе оқу мақсаты"></div>
+  <button class="blue" onclick="loadTaskBank()">Іздеу</button>
+  <button class="green" onclick="showTaskCreate()">➕ Тапсырма қосу</button>
+  <div id="taskCreateBox" style="display:none;margin-top:14px" class="card">
+   <input id="tbTitle" placeholder="Тапсырма атауы"><textarea id="tbText" rows="4" placeholder="Тапсырма мәтіні"></textarea>
+   <div class="grid3"><input id="tbObjective" placeholder="Оқу мақсаты"><select id="tbLevel"><option>A</option><option>B</option><option>C</option></select><input id="tbPoints" type="number" value="1" min="1"></div>
+   <textarea id="tbDescriptor" placeholder="Дескриптор"></textarea><textarea id="tbAnswer" placeholder="Жауап кілті"></textarea>
+   <button class="green" onclick="saveBankTask()">Сақтау</button>
+  </div>
+  <div id="taskBankList" style="margin-top:14px"></div>
+ </div>
+</section>
+
+<section id="community" class="panel">
+ <div class="card"><h2>🌐 ZEREK ортақ ҚМЖ базасы</h2>
+  <div class="grid3"><select id="communitySubject"></select><input id="communityGrade" placeholder="Сынып"><input id="communitySearch" placeholder="Тақырып / оқу мақсаты"></div>
+  <button class="blue" onclick="loadCommunity()">Іздеу</button>
+  <p class="muted">Ортақ материалдың түпнұсқасы өзгермейді. «Өзіме көшіру» жеке көшірме жасайды.</p>
+  <div id="communityList"></div>
+ </div>
+</section>
+
+<section id="myclasses" class="panel">
+ <div class="card"><h2>👥 Менің сыныптарым</h2>
+  <div class="grid"><input id="newClassName" placeholder="Мысалы: 7А"><input id="newClassYear" placeholder="Оқу жылы, мысалы 2026-2027"></div>
+  <button class="green" onclick="createClass()">➕ Сынып қосу</button>
+  <div id="myClassList" style="margin-top:14px"></div>
+ </div>
+</section>
 
 <section id="packages" class="panel"><div class="card"><h2>💳 Менің пакетім</h2>
 <div id="packageBalance" class="notice">Жүктелуде...</div><div id="packageCards" class="group-grid"></div>
 <h3>Төлем сұраныстарым</h3><div id="myPayments"></div>
 <p class="muted">Қазіргі қауіпсіз тест режимі: пакет сұранысын жібересіз, әкімші төлемді тексеріп растағаннан кейін лимит аккаунтыңызға қосылады. Карта/Kaspi/Freedom Pay автоматты төлемі merchant келісімінен кейін қосылады.</p></div></section>
-<section id="admin" class="panel"><div class="card"><h2>🔐 Кіру рұқсаттары</h2><button class="blue" id="refreshUsers">Жаңарту</button><div id="adminUsers"></div></div></section>
+<section id="admin" class="panel"><div class="card"><h2>🔐 Кіру рұқсаттары</h2><button class="blue" id="refreshUsers">Жаңарту</button><div id="adminUsers"></div></div><div class="card"><h2>💳 Төлем сұраныстары</h2><button class="blue" id="refreshPayments">Төлемдерді жаңарту</button><div id="adminPayments" style="margin-top:12px">Жүктелуде...</div></div></section>
 
 <section id="kmjbuilder" class="panel">
 <div class="card"><h2>📝 ҚМЖ құрастыру</h2>
@@ -335,7 +420,90 @@ async function pngExport(el,name){
 function printHtml(title,content){
  const win=window.open("","_blank");if(!win)return alert("Браузер жаңа терезені бұғаттады.");
  const doc=win.document;doc.open();
- doc.write("<!doctype html><html><head><meta charset='utf-8'><title>"+title+"</title><style>body{font-family:Arial;padding:24px}.card,.ds-card{border:1px solid #aaa;border-radius:12px;padding:14px;margin:10px}.ds-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.task-image{max-width:100%;max-height:300px;object-fit:contain}details{display:none}</style></head><body>"+content+"</body></html>");
+ doc.write("<!doctype html><html><head><meta charset='utf-8'><title>"+title+"</title><style>body{font-family:Arial;padding:24px}.card,.ds-card{border:1px solid #aaa;border-radius:12px;padding:14px;margin:10px}.ds-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.task-image{max-width:100%;max-height:300px;object-fit:contain}details{display:none}</style>
+<style>
+.zerek-hub{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.zerek-module{border:1px solid #dbeafe;background:linear-gradient(145deg,#fff,#f4f8ff);border-radius:18px;padding:18px;cursor:pointer;transition:.18s}
+.zerek-module:hover{transform:translateY(-2px);box-shadow:0 10px 26px #1d4ed81a}
+.zerek-module .ico{font-size:34px}.zerek-module h3{margin:8px 0}.zerek-module p{color:#64748b;line-height:1.45}
+.subject-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.subject-card{border:1px solid #cbd5e1;border-radius:16px;padding:18px;background:#fff;cursor:pointer}
+.subject-card:hover{border-color:#2563eb;background:#eff6ff}
+.subject-card b{font-size:18px}
+.bank-card{border-left:5px solid #2563eb}
+.kmj-pro{background:linear-gradient(135deg,#eff6ff,#fff);border:1px solid #bfdbfe}
+.zerek-chip{display:inline-block;padding:5px 9px;border-radius:999px;background:#e0e7ff;color:#3730a3;font-size:12px;font-weight:700;margin:2px}
+.big-action{font-size:17px;padding:14px 20px}
+</style>
+
+</head><body>"+content+"
+<script>
+const ZEREK_SUBJECTS=[
+ ["➗","Математика"],["📐","Алгебра"],["📏","Геометрия"],["⚛️","Физика"],
+ ["🧪","Химия"],["🧬","Биология"],["🌍","География"],["📖","Қазақ тілі"],
+ ["🇷🇺","Орыс тілі"],["🇬🇧","Ағылшын тілі"],["💻","Информатика"],["🏛️","Қазақстан тарихы"],["🌐","Дүниежүзі тарихы"]
+];
+function openZerek(id){document.querySelector(`#tabs button[data-p="${id}"]`)?.click()}
+function fillSubjects(){
+ const g=document.getElementById("subjectGrid");
+ if(g)g.innerHTML=ZEREK_SUBJECTS.map(([i,n])=>`<div class="subject-card" onclick="chooseSubject('${n}')"><div style="font-size:30px">${i}</div><b>${n}</b><p class="muted">ҚМЖ • тапсырмалар • ортақ база</p></div>`).join("");
+ ["hubSubject","bankSubject","communitySubject"].forEach(id=>{let e=document.getElementById(id);if(e)e.innerHTML=ZEREK_SUBJECTS.map(x=>`<option>${x[1]}</option>`).join("")});
+}
+function chooseSubject(n){document.getElementById("hubSubject").value=n;openZerek("kmjcenter")}
+function sendToKmjBuilder(){
+ const m={bSubject:"hubSubject",bClass:"hubGrade",bSection:"hubSection",bTopic:"hubTopic",bObjective:"hubObjective"};
+ Object.entries(m).forEach(([to,fr])=>{let a=document.getElementById(to),b=document.getElementById(fr);if(a&&b)a.value=b.value});
+ let ins=document.getElementById("bInstruction");
+ if(ins)ins.value=`Пән ерекшелігін сақта. Нақты орындалатын тапсырмаларды толық шартымен бер. Математикалық пән болса нақты есептерді жаз. A/B/C деңгейлік тапсырмалар, әр тапсырмаға дескриптор және балл, мұғалімге жауап кілті, сабақ соңында рефлексия және нақты үй тапсырмасы міндетті.`;
+ openZerek("kmjbuilder");
+}
+function searchBankFromKmj(){
+ document.getElementById("bankSubject").value=document.getElementById("hubSubject").value;
+ document.getElementById("bankGrade").value=document.getElementById("hubGrade").value;
+ document.getElementById("bankSearch").value=document.getElementById("hubObjective").value||document.getElementById("hubTopic").value;
+ openZerek("taskbank");loadTaskBank();
+}
+async function apiJson(url,opt){
+ let r=await fetch(url,opt),txt=await r.text(),d;try{d=JSON.parse(txt)}catch(e){throw Error("Сервер JSON орнына басқа жауап қайтарды: "+txt.slice(0,100))}
+ if(!r.ok)throw Error(d.detail||"Сервер қатесі");return d;
+}
+function showTaskCreate(){let b=document.getElementById("taskCreateBox");b.style.display=b.style.display==="none"?"block":"none"}
+async function loadTaskBank(){
+ try{
+  let q=new URLSearchParams({subject:document.getElementById("bankSubject").value,grade:document.getElementById("bankGrade").value,q:document.getElementById("bankSearch").value});
+  let d=await apiJson("/api/zerek/task-bank?"+q);
+  document.getElementById("taskBankList").innerHTML=(d.items||[]).map(x=>`<div class="card bank-card"><b>${x.title}</b> <span class="zerek-chip">${x.level||"A"}</span> <span class="zerek-chip">${x.points||1} балл</span><br><span class="muted">${x.subject||""} • ${x.grade||""} • ${x.learning_objective||""}</span><p>${x.task_text||""}</p><b>Дескриптор:</b> ${x.descriptor||"—"}<br><button class="green" onclick='addBankTaskToKmj(${JSON.stringify(x).replaceAll("'","&#39;")})'>➕ ҚМЖ-ға қосу</button></div>`).join("")||'<div class="notice">Бұл сүзгі бойынша тапсырма әзірге жоқ.</div>';
+ }catch(e){document.getElementById("taskBankList").innerHTML='<div class="notice">❌ '+e.message+'</div>'}
+}
+async function saveBankTask(){
+ try{
+  let body={subject:document.getElementById("bankSubject").value,grade:document.getElementById("bankGrade").value,title:document.getElementById("tbTitle").value,task_text:document.getElementById("tbText").value,learning_objective:document.getElementById("tbObjective").value,level:document.getElementById("tbLevel").value,points:Number(document.getElementById("tbPoints").value||1),descriptor:document.getElementById("tbDescriptor").value,answer_key:document.getElementById("tbAnswer").value};
+  await apiJson("/api/zerek/task-bank",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});showTaskCreate();loadTaskBank();
+ }catch(e){alert(e.message)}
+}
+function addBankTaskToKmj(x){
+ if(typeof kmjManualTasks==="undefined")return alert("ҚМЖ конструкторы жүктелмеді.");
+ kmjManualTasks.push({stage:"Сабақтың ортасы",work_type:"individual",title:x.title,task_text:x.task_text,minutes:7,points:x.points||1,descriptor:x.descriptor||"",assessment:(x.points||1)+" балл",resource_name:"ZEREK тапсырмалар банкі",resource_text:""});
+ if(typeof renderManualTasks==="function")renderManualTasks();openZerek("kmjbuilder");
+}
+async function loadCommunity(){
+ try{
+  let q=new URLSearchParams({subject:document.getElementById("communitySubject").value,grade:document.getElementById("communityGrade").value,q:document.getElementById("communitySearch").value});
+  let d=await apiJson("/api/zerek/community-kmj?"+q);
+  document.getElementById("communityList").innerHTML=(d.items||[]).map(x=>`<div class="card"><b>${x.title}</b><br><span class="muted">${x.subject||""} • ${x.class_name||""} • Автор: ${x.author_name||"ZEREK мұғалімі"}</span><p>${x.learning_objective||""}</p><button class="green" onclick="copyCommunityKmj(${x.id})">📋 Өзіме көшіру</button></div>`).join("")||'<div class="notice">Ортақ базада материал әзірге жоқ.</div>';
+ }catch(e){document.getElementById("communityList").innerHTML='<div class="notice">❌ '+e.message+'</div>'}
+}
+async function copyCommunityKmj(id){try{await apiJson("/api/zerek/community-kmj/"+id+"/copy",{method:"POST"});alert("✅ ҚМЖ жеке архивіңізге көшірілді.");openZerek("archive");if(typeof loadArchive==="function")loadArchive()}catch(e){alert(e.message)}}
+async function createClass(){
+ try{await apiJson("/api/zerek/classes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:document.getElementById("newClassName").value,school_year:document.getElementById("newClassYear").value})});document.getElementById("newClassName").value="";loadMyClasses()}catch(e){alert(e.message)}
+}
+async function loadMyClasses(){
+ try{let d=await apiJson("/api/zerek/classes");document.getElementById("myClassList").innerHTML=(d.items||[]).map(x=>`<div class="card"><b>${x.name}</b> • ${x.school_year||""}<br><span class="muted">${x.student_count||0} оқушы</span></div>`).join("")||'<div class="notice">Әзірге сынып қосылмаған.</div>'}catch(e){}
+}
+fillSubjects();setTimeout(()=>{loadMyClasses()},500);
+</script>
+
+</body></html>");
  doc.close();setTimeout(()=>win.print(),600);
 }
 
@@ -423,7 +591,7 @@ async function loadPackages(){try{let s=await fetch("/api/user/ai-settings"),sd=
 window.buyPackage=async code=>{let note=prompt("Төлем туралы ескерту/түбіртек нөмірі (қалауыңызша):","")||"";let r=await fetch("/api/payments/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({package_code:code,note})}),d=await r.json();alert(r.ok?`Сұраныс жіберілді. №${d.payment_id}, ${d.amount_kzt} ₸. Әкімші растауын күтіңіз.`:d.detail||"Қате");loadPackages()};
 async function loadMyPayments(){let r=await fetch("/api/payments/mine"),d=await r.json();if(r.ok)$("myPayments").innerHTML=(d.items||[]).map(x=>`<div class="card">№${x.id} • ${esc(x.package_code)} • ${x.amount_kzt} ₸ • <b>${esc(x.status)}</b></div>`).join("")||"Сұраныс жоқ."}
 async function loadAdminPayments(){let r=await fetch("/api/admin/payments"),d=await r.json();if(r.ok)$("adminPayments").innerHTML=(d.items||[]).map(x=>`<div class="card"><b>${esc(x.name)}</b> — ${esc(x.email)}<br>${esc(x.package_code)} • ${x.amount_kzt} ₸ • <b>${esc(x.status)}</b><br>${esc(x.note||"")}${x.status==="pending"?`<br><button class="green" onclick="approvePayment(${x.id},true)">✅ Төлемді растау</button> <button class="red" onclick="approvePayment(${x.id},false)">❌ Бас тарту</button>`:""}</div>`).join("")}
-window.approvePayment=async(id,approve)=>{await fetch("/api/admin/payments/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({payment_id:id,approve})});loadAdminPayments();loadAdminUsers()};
+window.approvePayment=async(id,approve)=>{try{let r=await fetch("/api/admin/payments/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({payment_id:id,approve})}),d=await r.json();if(!r.ok)throw Error(d.detail||"Төлемді өңдеу қатесі");alert(approve?"✅ Төлем расталды. Пакет пен лимиттер пайдаланушыға қосылды.":"❌ Төлем сұранысы қабылданбады.");await loadAdminPayments();await loadAdminUsers()}catch(e){alert("❌ "+e.message)}};
 if($("refreshPayments"))$("refreshPayments").onclick=loadAdminPayments;
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
@@ -435,9 +603,9 @@ if($("registerBtn"))if($("registerBtn")) $("registerBtn").onclick=async()=>{let 
 if($("loginBtn"))if($("loginBtn")) $("loginBtn").onclick=async()=>{let r=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:$("loginEmail").value,password:$("loginPassword").value})}),d=await r.json();if(r.ok)checkAuth();else $("authStatus").textContent="❌ "+(d.detail||"Қате")};
 if($("logoutBtn"))if($("logoutBtn")) $("logoutBtn").onclick=async()=>{await fetch("/api/auth/logout",{method:"POST"});location.reload()};
 async function loadAdminUsers(){let r=await fetch("/api/admin/users"),d=await r.json();if(!r.ok)return $("adminUsers").textContent=d.detail||"Қате";$("adminUsers").innerHTML=(d.users||[]).map(u=>`<div class="card"><b>${esc(u.name)}</b> — ${esc(u.email)}<br>Күйі: <b>${esc(u.status)}</b> • ${esc(u.role)} ${u.role!=="admin"?`<div><button class="green" onclick="approveUser(${u.id},true)">✅ Рұқсат беру</button> <button class="gray" onclick="approveUser(${u.id},false)">❌ Бас тарту</button><br>Пакет: <b>${u.plan||"free"}</b> • OpenAI ${u.openai_used||0}/${u.openai_limit||0} • Gemini ${u.gemini_used||0}/${u.gemini_limit||0}<br>
-<select id="plan-${u.id}" style="width:140px"><option value="free">Free</option><option value="standard">Standard</option><option value="pro">Pro</option></select><button class="blue" onclick="setPlan(${u.id})">Пакет беру</button><br>
+<select id="plan-${u.id}" style="width:140px"><option value="free" ${u.plan==="free"?"selected":""}>Free</option><option value="standard" ${u.plan==="standard"?"selected":""}>Standard</option><option value="pro" ${u.plan==="pro"?"selected":""}>Pro</option></select><button class="blue" onclick="setPlan(${u.id})">Пакет беру</button><br>
 OpenAI <input id="ol-${u.id}" type="number" value="${u.openai_limit||0}" style="width:90px"> Gemini <input id="gl-${u.id}" type="number" value="${u.gemini_limit||0}" style="width:90px"><button class="gray" onclick="setProviderLimits(${u.id})">Лимит сақтау</button></div>`:""}</div>`).join("")}
-window.setPlan=async(id)=>{let plan=document.getElementById('plan-'+id)?.value||'free';await fetch('/api/admin/user-plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:id,plan})});loadAdminUsers()};
+window.setPlan=async(id)=>{let plan=document.getElementById('plan-'+id)?.value||'free';try{let r=await fetch('/api/admin/user-plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:id,plan})}),d=await r.json();if(!r.ok)throw Error(d.detail||'Пакет сақталмады');alert('✅ '+plan.toUpperCase()+' пакеті берілді.');await loadAdminUsers()}catch(e){alert('❌ '+e.message)}};
 window.setProviderLimits=async(id)=>{let o=Number(document.getElementById('ol-'+id)?.value||0),g=Number(document.getElementById('gl-'+id)?.value||0);await fetch('/api/admin/provider-limits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:id,openai_limit:o,gemini_limit:g})});loadAdminUsers()};
 window.setLimit=async(id)=>{let v=Number(document.getElementById('lim-'+id)?.value||30);await fetch('/api/admin/user-limit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:id,daily_limit:v})});loadAdminUsers()};
 window.approveUser=async(id,approve)=>{await fetch("/api/admin/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user_id:id,approve})});loadAdminUsers()};
