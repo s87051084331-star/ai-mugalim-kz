@@ -114,14 +114,6 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
   <div class="grid"><input id="newClassName" placeholder="Мысалы: 7А"><input id="newClassYear" placeholder="Оқу жылы, мысалы 2026-2027"></div>
   <button class="green" onclick="createClass()">➕ Сынып қосу</button>
   <div id="myClassList" style="margin-top:14px"></div>
-  <div id="safeClassWorkspace" class="card" style="display:none;margin-top:16px">
-    <h3 id="safeClassTitle">Сынып оқушылары</h3>
-    <div class="grid"><input id="safeStudentName" placeholder="Оқушы аты-жөні"><input id="safeClassFile" type="file" accept=".xlsx,.csv,.txt"></div>
-    <button class="green" id="safeAddStudent">➕ Оқушы қосу</button>
-    <button class="blue" id="safeImportStudents">📥 Excel/CSV импорт</button>
-    <button class="gray" id="safeCloseClass">Жабу</button>
-    <div id="safeStudentList" style="margin-top:12px"></div>
-  </div>
  </div>
 </section>
 
@@ -316,7 +308,7 @@ function typesetMath(el){if(window.MathJax?.typesetPromise)window.MathJax.typese
 function modeLabel(m){return ({group:"👥 Топтық",pair:"👫 Жұптық",individual:"👤 Жеке",external:"🔗 Сыртқы"})[m]||"👤 Жеке"}
 function renderTaskCard(t,i){
  const ext=t.external_url?`<div style="margin-top:8px"><a href="${esc(t.external_url)}" target="_blank" rel="noopener noreferrer">🔗 Сыртқы платформаны ашу</a></div>`:"";
- const pic=t.image?.data_url?`<div><img src="${t.image.data_url}" class="task-image" alt="${esc(t.image.name||"ҚМЖ суреті")}"></div>`:"";
+ const pic=t.image?.data_url?`<div><img src="${esc(t.image.data_url)}" class="task-image" alt="${esc(t.image.name||"ҚМЖ суреті")}"></div>`:"";
  return `<div class="card task-card" data-mode="${esc(t.work_mode||"individual")}" data-group="${esc(t.group_name||"")}"><div class="muted">${modeLabel(t.work_mode)} ${t.group_name?("• "+esc(t.group_name)):""}</div><b>${i+1}. ${esc(t.question)}</b>${pic}<br><span class="muted">Түрі: ${esc(t.type)} • Дескриптор: ${esc(t.descriptor)}</span>${ext}</div>`
 }
 
@@ -428,63 +420,7 @@ async function pngExport(el,name){
 function printHtml(title,content){
  const win=window.open("","_blank");if(!win)return alert("Браузер жаңа терезені бұғаттады.");
  const doc=win.document;doc.open();
- doc.write("<!doctype html><html><head><meta charset=\'utf-8\'><title>"+esc(title)+"</title><style>body{font-family:Arial;padding:24px}.card,.ds-card{border:1px solid #aaa;border-radius:12px;padding:14px;margin:10px}.ds-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.task-image{max-width:100%;max-height:300px;object-fit:contain}details{display:none}</style></head><body>"+content+"
-<script>
-(function(){
- let activeClass=null;
- async function sj(url,opt){
-   const r=await fetch(url,opt); const text=await r.text(); let d={};
-   try{d=JSON.parse(text)}catch(e){throw new Error("Сервер жауабы оқылмады");}
-   if(!r.ok)throw new Error(typeof d.detail==="string"?d.detail:"Сервер қатесі");
-   return d;
- }
- window.openSafeClass=async function(id,name,year){
-   activeClass={id,name,year};
-   document.getElementById("safeClassWorkspace").style.display="block";
-   document.getElementById("safeClassTitle").textContent=`👥 ${name} • ${year||""}`;
-   await loadSafeStudents();
- }
- async function loadSafeStudents(){
-   if(!activeClass)return;
-   const d=await sj(`/api/zerek/classes/${activeClass.id}/students`);
-   document.getElementById("safeStudentList").innerHTML=(d.items||[]).map((s,i)=>`<div class="card" style="padding:12px"><b>${i+1}. ${esc(s.name)}</b> <span class="zerek-chip">${esc(s.student_code||"")}</span><button class="red" style="float:right" onclick="deleteSafeStudent(${s.id})">Өшіру</button></div>`).join("")||'<div class="notice">Оқушы жоқ.</div>';
- }
- window.deleteSafeStudent=async function(id){
-   if(!activeClass||!confirm("Оқушыны өшіру керек пе?"))return;
-   await sj(`/api/zerek/classes/${activeClass.id}/students/${id}`,{method:"DELETE"});
-   await loadSafeStudents(); if(typeof loadMyClasses==="function")await loadMyClasses();
- }
- document.getElementById("safeAddStudent").onclick=async function(){
-   if(!activeClass)return alert("Алдымен сыныпты ашыңыз.");
-   const name=document.getElementById("safeStudentName").value.trim(); if(!name)return;
-   await sj(`/api/zerek/classes/${activeClass.id}/students`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name})});
-   document.getElementById("safeStudentName").value=""; await loadSafeStudents(); if(typeof loadMyClasses==="function")await loadMyClasses();
- };
- document.getElementById("safeImportStudents").onclick=async function(){
-   if(!activeClass)return alert("Алдымен сыныпты ашыңыз.");
-   const f=document.getElementById("safeClassFile").files[0]; if(!f)return alert("Файл таңдаңыз.");
-   const fd=new FormData();fd.append("file",f);
-   const d=await sj(`/api/zerek/classes/${activeClass.id}/import`,{method:"POST",body:fd});
-   alert(`✅ ${d.count} оқушы өңделді.`); await loadSafeStudents(); if(typeof loadMyClasses==="function")await loadMyClasses();
- };
- document.getElementById("safeCloseClass").onclick=function(){document.getElementById("safeClassWorkspace").style.display="none";activeClass=null;};
-
- // Decorate class cards after the original loader renders them.
- const oldLoad=window.loadMyClasses;
- if(typeof oldLoad==="function"){
-   window.loadMyClasses=async function(){
-     await oldLoad();
-     try{
-       const d=await sj("/api/zerek/classes");
-       document.getElementById("myClassList").innerHTML=(d.items||[]).map(x=>`<div class="card"><b>${esc(x.name)}</b> • ${esc(x.school_year||"")}<br><span class="muted">${x.student_count||0} оқушы</span><div style="margin-top:9px"><button class="blue" onclick="openSafeClass(${x.id},'${String(x.name).replaceAll("'","&#39;")}','${String(x.school_year||"").replaceAll("'","&#39;")}')">👥 Оқушылар</button></div></div>`).join("")||'<div class="notice">Әзірге сынып қосылмаған.</div>';
-     }catch(e){}
-   }
-   setTimeout(()=>window.loadMyClasses(),700);
- }
-})();
-</script>
-
-</body></html>");
+ doc.write("<!doctype html><html><head><meta charset=\'utf-8\'><title>"+esc(title)+"</title><style>body{font-family:Arial;padding:24px}.card,.ds-card{border:1px solid #aaa;border-radius:12px;padding:14px;margin:10px}.ds-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.task-image{max-width:100%;max-height:300px;object-fit:contain}details{display:none}</style></head><body>"+content+"</body></html>");
  doc.close();setTimeout(()=>win.print(),600);
 }
 
@@ -514,7 +450,7 @@ function buildDesignSheet(){
  const showAns=!!byId("designAnswers")?.checked;
  if(spec?.background)canvas.style.background=spec.background;
  else canvas.style.background="#fff";
- canvas.innerHTML='<div class="ds-head"><h2>'+esc(title)+'</h2><div>'+esc(lesson.class_name||"")+' • '+esc(lesson.subject||"")+' • 🎯 '+esc(lesson.learning_objective||"")+'</div></div><div class="ds-grid">'+buckets.map((g,gi)=>'<div class="ds-card '+colors[gi]+'"><h3>'+esc(g.name)+'</h3>'+g.tasks.map((t,i)=>'<div class="ds-task"><b>'+(i+1)+'.</b> '+esc(t.question||"")+(t.image?.data_url?'<div><img class="task-image" src="${t.image.data_url}"></div>':'')+'<div class="muted">Дескриптор: '+esc(t.descriptor||"")+'</div></div>').join("")+(showAns?'<div class="ds-answer"><b>Жауап:</b><br>'+g.tasks.map((t,i)=>(i+1)+') '+esc(t.correct_answer||t.answer||"—")).join("<br>")+'</div>':'')+'</div>').join("")+'</div><div class="ds-brand">ZEREK Education • AI Мұғалім көмекшісі</div>';
+ canvas.innerHTML='<div class="ds-head"><h2>'+esc(title)+'</h2><div>'+esc(lesson.class_name||"")+' • '+esc(lesson.subject||"")+' • 🎯 '+esc(lesson.learning_objective||"")+'</div></div><div class="ds-grid">'+buckets.map((g,gi)=>'<div class="ds-card '+colors[gi]+'"><h3>'+esc(g.name)+'</h3>'+g.tasks.map((t,i)=>'<div class="ds-task"><b>'+(i+1)+'.</b> '+esc(t.question||"")+(t.image?.data_url?'<div><img class="task-image" src="'+t.image.data_url+'"></div>':'')+'<div class="muted">Дескриптор: '+esc(t.descriptor||"")+'</div></div>').join("")+(showAns?'<div class="ds-answer"><b>Жауап:</b><br>'+g.tasks.map((t,i)=>(i+1)+') '+esc(t.correct_answer||t.answer||"—")).join("<br>")+'</div>':'')+'</div>').join("")+'</div><div class="ds-brand">ZEREK Education • AI Мұғалім көмекшісі</div>';
  if(spec){
    const grid=canvas.querySelector(".ds-grid");
    if(grid)grid.style.gridTemplateColumns=`repeat(${Math.max(1,Math.min(4,Number(spec.columns||2)))},1fr)`;
