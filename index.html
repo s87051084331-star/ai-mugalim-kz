@@ -115,6 +115,26 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
   <button class="green" onclick="createClass()">➕ Сынып қосу</button>
   <div id="myClassList" style="margin-top:14px"></div>
  </div>
+ <div id="classWorkspace" class="card" style="display:none">
+  <h2 id="classWorkspaceTitle">Сынып</h2>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+   <button class="blue" onclick="showClassPane('students')">👥 Оқушылар</button>
+   <button class="green" onclick="startSelectedClassLesson()">▶️ Сабақ бастау</button>
+   <button class="blue" onclick="showClassPane('results')">📊 Нәтижелер</button>
+   <button class="gray" onclick="showClassPane('summary')">📈 Тоқсан / Жыл</button>
+  </div>
+  <div id="classStudentsPane" style="margin-top:16px">
+   <div class="grid"><input id="persistentStudentName" placeholder="Оқушы аты-жөні"><input id="persistentClassFile" type="file" accept=".xlsx,.csv,.txt"></div>
+   <button class="green" onclick="addPersistentStudent()">➕ Оқушы қосу</button>
+   <button class="blue" onclick="importPersistentStudents()">📥 Excel/CSV импорт</button>
+   <div id="persistentStudentList"></div>
+  </div>
+  <div id="classResultsPane" style="display:none;margin-top:16px"><div id="classResultsList" class="notice">Нәтижелерді жүктеу үшін тоқсанды таңдаңыз.</div></div>
+  <div id="classSummaryPane" style="display:none;margin-top:16px">
+   <select id="summaryQuarter" onchange="loadClassSummary()"><option value="">Жылдық / Барлығы</option><option>I тоқсан</option><option>II тоқсан</option><option>III тоқсан</option><option>IV тоқсан</option></select>
+   <div id="classSummaryList"></div>
+  </div>
+ </div>
 </section>
 
 <section id="packages" class="panel"><div class="card"><h2>💳 Менің пакетім</h2>
@@ -420,7 +440,66 @@ async function pngExport(el,name){
 function printHtml(title,content){
  const win=window.open("","_blank");if(!win)return alert("Браузер жаңа терезені бұғаттады.");
  const doc=win.document;doc.open();
- doc.write("<!doctype html><html><head><meta charset=\'utf-8\'><title>"+esc(title)+"</title><style>body{font-family:Arial;padding:24px}.card,.ds-card{border:1px solid #aaa;border-radius:12px;padding:14px;margin:10px}.ds-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.task-image{max-width:100%;max-height:300px;object-fit:contain}details{display:none}</style></head><body>"+content+"</body></html>");
+ doc.write("<!doctype html><html><head><meta charset=\'utf-8\'><title>"+esc(title)+"</title><style>body{font-family:Arial;padding:24px}.card,.ds-card{border:1px solid #aaa;border-radius:12px;padding:14px;margin:10px}.ds-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.task-image{max-width:100%;max-height:300px;object-fit:contain}details{display:none}</style></head><body>"+content+"
+<script>
+let selectedPersistentClass=null;
+async function loadMyClasses(){
+ try{
+  let d=await apiJson("/api/zerek/classes");
+  document.getElementById("myClassList").innerHTML=(d.items||[]).map(x=>`<div class="card"><b>${esc(x.name)}</b> • ${esc(x.school_year||"")}<br><span class="muted">${x.student_count||0} оқушы</span><div style="margin-top:10px"><button class="blue" onclick='openPersistentClass(${JSON.stringify(x)})'>📂 Ашу</button></div></div>`).join("")||'<div class="notice">Әзірге сынып қосылмаған.</div>';
+ }catch(e){document.getElementById("myClassList").innerHTML='<div class="notice">❌ '+esc(e.message)+'</div>'}
+}
+function openPersistentClass(x){
+ selectedPersistentClass=x;
+ document.getElementById("classWorkspace").style.display="block";
+ document.getElementById("classWorkspaceTitle").textContent=`👥 ${x.name} • ${x.school_year||""}`;
+ showClassPane("students");loadPersistentStudents();
+}
+function showClassPane(p){
+ ["Students","Results","Summary"].forEach(n=>document.getElementById("class"+n+"Pane").style.display="none");
+ document.getElementById("class"+p[0].toUpperCase()+p.slice(1)+"Pane").style.display="block";
+ if(p==="summary"||p==="results")loadClassSummary();
+}
+async function loadPersistentStudents(){
+ if(!selectedPersistentClass)return;
+ let d=await apiJson(`/api/zerek/classes/${selectedPersistentClass.id}/students`);
+ document.getElementById("persistentStudentList").innerHTML=(d.items||[]).map((s,i)=>`<div class="card" style="padding:12px"><b>${i+1}. ${esc(s.name)}</b> <span class="zerek-chip">${esc(s.student_code||"")}</span><button class="red" style="float:right" onclick="deletePersistentStudent(${s.id})">Өшіру</button></div>`).join("")||'<div class="notice">Бұл сыныпта оқушы жоқ.</div>';
+}
+async function addPersistentStudent(){
+ if(!selectedPersistentClass)return alert("Сыныпты ашыңыз.");
+ let name=document.getElementById("persistentStudentName").value.trim();if(!name)return;
+ await apiJson(`/api/zerek/classes/${selectedPersistentClass.id}/students`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name})});
+ document.getElementById("persistentStudentName").value="";await loadPersistentStudents();await loadMyClasses();
+}
+async function deletePersistentStudent(id){
+ if(!confirm("Оқушыны өшіру керек пе?"))return;
+ await apiJson(`/api/zerek/classes/${selectedPersistentClass.id}/students/${id}`,{method:"DELETE"});await loadPersistentStudents();await loadMyClasses();
+}
+async function importPersistentStudents(){
+ let f=document.getElementById("persistentClassFile").files[0];if(!f)return alert("Excel/CSV файлын таңдаңыз.");
+ let fd=new FormData();fd.append("file",f);
+ let r=await fetch(`/api/zerek/classes/${selectedPersistentClass.id}/import`,{method:"POST",body:fd});let d=await r.json();if(!r.ok)throw Error(d.detail||"Импорт қатесі");
+ alert(`✅ ${d.count} оқушы өңделді.`);await loadPersistentStudents();await loadMyClasses();
+}
+async function startSelectedClassLesson(){
+ if(!selectedPersistentClass)return;
+ lesson.class_name=selectedPersistentClass.name;renderLesson();
+ document.getElementById("qrClass").value=selectedPersistentClass.name;
+ openZerek("qr");
+ alert("Сынып таңдалды. Енді тақырыпты тексеріп, «Сабақты бастау» басыңыз.");
+}
+async function loadClassSummary(){
+ if(!selectedPersistentClass)return;
+ let q=document.getElementById("summaryQuarter")?.value||"";
+ let d=await apiJson(`/api/zerek/classes/${selectedPersistentClass.id}/summary?quarter=${encodeURIComponent(q)}`);
+ let rows=d.items||[];
+ let table=`<div style="overflow:auto"><table><thead><tr><th>Оқушы</th><th>Сабақ саны</th><th>Орташа нәтиже</th><th>Деңгей</th></tr></thead><tbody>${rows.map(x=>{let p=Number(x.avg_percent||0);let lvl=p>=80?"🟢 Жақсы":p>=50?"🟡 Қолдау қажет":"🔴 Дерек аз";return `<tr><td>${esc(x.name)}</td><td>${x.lessons}</td><td>${p}%</td><td>${lvl}</td></tr>`}).join("")}</tbody></table></div>`;
+ document.getElementById("classSummaryList").innerHTML=table;
+ document.getElementById("classResultsList").innerHTML=table;
+}
+</script>
+
+</body></html>");
  doc.close();setTimeout(()=>win.print(),600);
 }
 
