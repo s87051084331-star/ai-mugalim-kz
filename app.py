@@ -639,6 +639,18 @@ async def zerek_students_import(class_id:int,request:Request,file:UploadFile=Fil
                 cur.execute("UPDATE class_students SET student_code=%s WHERE id=%s",("ST"+str(row["id"]).zfill(4),row["id"]))
     return {"ok":True,"count":len(names)}
 
+
+@app.delete("/api/zerek/classes/{class_id}")
+def zerek_class_delete(class_id:int,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("SELECT id,name FROM teacher_classes WHERE id=%s AND user_id=%s",(class_id,u["id"]))
+            row=cur.fetchone()
+            if not row: raise HTTPException(404,"Сынып табылмады.")
+            cur.execute("DELETE FROM teacher_classes WHERE id=%s AND user_id=%s",(class_id,u["id"]))
+    return {"ok":True,"name":row["name"]}
+
 @app.post("/api/zerek/community-kmj")
 def zerek_community_publish(body:ArchiveSaveBody,request:Request):
     u=auth_user(request)

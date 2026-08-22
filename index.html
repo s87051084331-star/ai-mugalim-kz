@@ -43,7 +43,7 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 </style>
 
 </head><body>
-<header><div class="brand-head"><img src="/zerek-logo.png" class="brand-logo" alt="ZEREK Education"><div><h1>AI Мұғалім көмекшісі <span title="Толық қайта жасалған тұрақты нұсқа" style="font-size:12px;background:#2563eb;padding:5px 8px;border-radius:999px;vertical-align:middle">V3</span></h1><div><b>ZEREK Education</b> • Қазақстан мұғалімдеріне арналған көмекші құрал</div></div></div><div><b>Жоба авторы: ҚОҚАЙ ЖІГЕР</b></div><div style="display:flex;gap:8px;align-items:center"><select id="langSelect" style="width:auto;margin:0"><option value="kk">Қазақша</option><option value="ru">Русский</option><option value="en">English</option></select><button id="installPwaBtn" class="blue" style="display:none">📲 Орнату</button><button id="logoutBtn" class="gray" style="display:none">Шығу</button></div></header>
+<header><div class="brand-head"><img src="/zerek-logo.png" class="brand-logo" alt="ZEREK Education"><div><h1>AI Мұғалім көмекшісі <span title="V5.1 — сынып панелі түзетілді" style="font-size:12px;background:#2563eb;padding:5px 8px;border-radius:999px;vertical-align:middle">V3</span></h1><div><b>ZEREK Education</b> • Қазақстан мұғалімдеріне арналған көмекші құрал</div></div></div><div><b>Жоба авторы: ҚОҚАЙ ЖІГЕР</b></div><div style="display:flex;gap:8px;align-items:center"><select id="langSelect" style="width:auto;margin:0"><option value="kk">Қазақша</option><option value="ru">Русский</option><option value="en">English</option></select><button id="installPwaBtn" class="blue" style="display:none">📲 Орнату</button><button id="logoutBtn" class="gray" style="display:none">Шығу</button></div></header>
 <div class="wrap">
 <div class="card" style="padding:14px 18px"><div class="grid"><div><label>🤖 AI провайдері</label><select id="aiProvider"><option value="auto">Автоматты</option><option value="gemini">Google Gemini</option><option value="openai">OpenAI (ChatGPT модельдері)</option></select></div><div><label>AI күйі</label><div id="aiStatus" class="notice">Тексерілуде...</div></div></div></div><div class="card"><h2>👤 Менің AI лимитім</h2><div class="grid"><div><label>AI таңдау</label><select id="myAiProvider"><option value="auto">Автоматты</option><option value="openai">OpenAI</option><option value="gemini">Gemini</option></select></div><div id="myAiUsage" class="notice">Жүктелуде...</div></div><button class="blue" id="saveMyAi">Сақтау</button></div><div id="lessonBar" class="lessonbar"><b>📚 Ағымдағы сабақ:</b> әлі басталмаған.</div>
 <div class="tabs" id="tabs"><button data-p="dashboard" class="on">🏠 Басты панель</button><button data-p="subjects">📚 Пәндер</button><button data-p="kmjcenter">📘 ҚМЖ орталығы</button><button data-p="taskbank">🧩 Тапсырмалар банкі</button><button data-p="community">🌐 Ортақ база</button><button data-p="myclasses">👥 Менің сыныптарым</button><button data-p="kmj">📘 ҚМЖ</button><button data-p="kmjbuilder">📝 ҚМЖ құрастыру</button><button data-p="archive">📚 Менің архивім</button><button data-p="myresources">📎 Менің ресурстарым</button><button data-p="slides">📊 ҚМЖ → Слайд</button><button data-p="tasks">📝 HTML тапсырма</button><button data-p="images">🖼 ҚМЖ суреттері</button><button data-p="grouping">🎲 Топқа бөлу</button><button data-p="groups">👥 Топтық жұмыс</button><button data-p="screen">🖥 Экран режимі</button><button data-p="resources">🔗 Сыртқы ресурстар</button><button data-p="class">👥 Сынып</button><button data-p="qr">📱 QR қатысу</button><button data-p="monitor">📹 Сабақ мониторингі</button><button data-p="oral">🎙️ Ауызша жауап</button><button data-p="analysis">🤖 Жеке талдау</button><button data-p="journal">📊 Журнал</button><button data-p="packages">💳 Менің пакетім</button><button data-p="admin" id="adminTab" style="display:none">🔐 Рұқсаттар</button></div>
@@ -607,22 +607,65 @@ async function createClass(){
 let cpClass=null;
 async function loadMyClasses(){
  try{
-  let d=await apiJson("/api/zerek/classes");
-  document.getElementById("myClassList").innerHTML=(d.items||[]).map(x=>`<div class="card"><b style="font-size:18px">${esc(x.name)}</b> • ${esc(x.school_year||"")}<br><span class="muted">${x.student_count||0} оқушы</span><div style="margin-top:10px"><button class="blue" onclick="openClassPanel(${x.id},${JSON.stringify(x.name)},${JSON.stringify(x.school_year||"")})">📂 Ашу</button></div></div>`).join("")||'<div class="notice">Әзірге сынып қосылмаған.</div>';
+  const d=await apiJson("/api/zerek/classes");
+  const list=document.getElementById("myClassList");
+  list.innerHTML="";
+  if(!(d.items||[]).length){list.innerHTML='<div class="notice">Әзірге сынып қосылмаған.</div>';return;}
+  (d.items||[]).forEach(x=>{
+    const card=document.createElement("div");card.className="card";
+    const title=document.createElement("div");
+    title.innerHTML=`<b style="font-size:18px">${esc(x.name)}</b> • ${esc(x.school_year||"")}<br><span class="muted">${x.student_count||0} оқушы</span>`;
+    const actions=document.createElement("div");actions.style.marginTop="10px";actions.style.display="flex";actions.style.gap="8px";actions.style.flexWrap="wrap";
+    const open=document.createElement("button");open.className="blue";open.textContent="📂 Ашу";
+    open.addEventListener("click",()=>openClassPanel(x.id,x.name,x.school_year||""));
+    const del=document.createElement("button");del.className="red";del.textContent="🗑 Сыныпты өшіру";
+    del.addEventListener("click",()=>deleteTeacherClass(x.id,x.name));
+    actions.append(open,del);card.append(title,actions);list.append(card);
+  });
  }catch(e){document.getElementById("myClassList").innerHTML='<div class="notice">❌ '+esc(e.message)+'</div>'}
 }
-window.openClassPanel=async function(id,name,year){
- cpClass={id,name,year};$("classPanel").style.display="block";$("classPanelTitle").textContent="👥 "+name+" • "+year;await loadClassStudents();$("classPanel").scrollIntoView({behavior:"smooth"});
+async function openClassPanel(id,name,year){
+ try{
+  cpClass={id,name,year};
+  $("classPanel").style.display="block";
+  $("classPanelTitle").textContent="👥 "+name+" • "+year;
+  $("cpStatus").textContent="Оқушылар жүктелуде...";
+  await loadClassStudents();
+  $("classPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ }catch(e){alert("❌ Сынып ашылмады: "+e.message)}
+}
+async function deleteTeacherClass(id,name){
+ if(!confirm(`«${name}» сыныбын және оған тіркелген оқушыларды өшіруге сенімдісіз бе?`))return;
+ try{
+  await apiJson("/api/zerek/classes/"+id,{method:"DELETE"});
+  if(cpClass&&Number(cpClass.id)===Number(id)){$("classPanel").style.display="none";cpClass=null}
+  await loadMyClasses();
+ }catch(e){alert("❌ "+e.message)}
 }
 async function loadClassStudents(){
- if(!cpClass)return;let d=await apiJson("/api/zerek/classes/"+cpClass.id+"/students");
+ if(!cpClass)return;
+ const d=await apiJson("/api/zerek/classes/"+cpClass.id+"/students");
  $("cpStatus").textContent="Оқушы саны: "+(d.items||[]).length;
  $("cpStudentList").innerHTML=(d.items||[]).map((s,i)=>`<div class="card" style="padding:12px"><b>${i+1}. ${esc(s.name)}</b> <span class="zerek-chip">${esc(s.student_code||"")}</span><button class="red" style="float:right" onclick="deleteClassStudent(${s.id})">Өшіру</button></div>`).join("")||'<div class="notice">Бұл сыныпта оқушы жоқ.</div>';
 }
-window.deleteClassStudent=async function(id){if(!cpClass||!confirm("Оқушыны өшіру керек пе?"))return;await apiJson("/api/zerek/classes/"+cpClass.id+"/students/"+id,{method:"DELETE"});await loadClassStudents();await loadMyClasses();}
-if($("cpAdd"))$("cpAdd").onclick=async()=>{if(!cpClass)return alert("Алдымен сыныпты ашыңыз.");let name=$("cpStudentName").value.trim();if(!name)return;await apiJson("/api/zerek/classes/"+cpClass.id+"/students",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name})});$("cpStudentName").value="";await loadClassStudents();await loadMyClasses()};
-if($("cpImport"))$("cpImport").onclick=async()=>{if(!cpClass)return alert("Алдымен сыныпты ашыңыз.");let f=$("cpStudentFile").files[0];if(!f)return alert("Excel/CSV файлын таңдаңыз.");let fd=new FormData();fd.append("file",f);let r=await fetch("/api/zerek/classes/"+cpClass.id+"/import",{method:"POST",body:fd}),d=await r.json();if(!r.ok)return alert("❌ "+(d.detail||"Импорт қатесі"));alert("✅ "+d.count+" оқушы өңделді.");await loadClassStudents();await loadMyClasses()};
+window.deleteClassStudent=async function(id){
+ if(!cpClass||!confirm("Оқушыны өшіру керек пе?"))return;
+ try{await apiJson("/api/zerek/classes/"+cpClass.id+"/students/"+id,{method:"DELETE"});await loadClassStudents();await loadMyClasses()}catch(e){alert("❌ "+e.message)}
+};
+if($("cpAdd"))$("cpAdd").onclick=async()=>{
+ if(!cpClass)return alert("Алдымен сыныпты ашыңыз.");
+ let name=$("cpStudentName").value.trim();if(!name)return;
+ try{await apiJson("/api/zerek/classes/"+cpClass.id+"/students",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name})});$("cpStudentName").value="";await loadClassStudents();await loadMyClasses()}catch(e){alert("❌ "+e.message)}
+};
+if($("cpImport"))$("cpImport").onclick=async()=>{
+ if(!cpClass)return alert("Алдымен сыныпты ашыңыз.");
+ let f=$("cpStudentFile").files[0];if(!f)return alert("Excel/CSV файлын таңдаңыз.");
+ let fd=new FormData();fd.append("file",f);
+ try{let r=await fetch("/api/zerek/classes/"+cpClass.id+"/import",{method:"POST",body:fd}),d=await r.json();if(!r.ok)throw Error(d.detail||"Импорт қатесі");alert("✅ "+d.count+" оқушы өңделді.");await loadClassStudents();await loadMyClasses()}catch(e){alert("❌ "+e.message)}
+};
 if($("cpUseLesson"))$("cpUseLesson").onclick=()=>{if(!cpClass)return;lesson.class_name=cpClass.name;renderLesson();$("qrClass").value=cpClass.name;alert("✅ "+cpClass.name+" сабаққа таңдалды.")};
 if($("cpClose"))$("cpClose").onclick=()=>{$("classPanel").style.display="none";cpClass=null};
+window.openClassPanel=openClassPanel;
+window.deleteTeacherClass=deleteTeacherClass;
 fillSubjects();setTimeout(()=>{loadMyClasses()},500);
 </script></body></html>
