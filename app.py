@@ -125,6 +125,14 @@ def init_db():
               created_at TIMESTAMPTZ DEFAULT NOW(),
               UNIQUE(user_id,name,school_year)
             )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS class_students(
+              id BIGSERIAL PRIMARY KEY,
+              class_id BIGINT REFERENCES teacher_classes(id) ON DELETE CASCADE,
+              name TEXT NOT NULL,
+              student_code TEXT DEFAULT '',
+              created_at TIMESTAMPTZ DEFAULT NOW(),
+              UNIQUE(class_id,name)
+            )""")
             cur.execute("""CREATE TABLE IF NOT EXISTS ai_usage(
               id BIGSERIAL PRIMARY KEY,
               user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -560,7 +568,7 @@ def zerek_classes(request:Request):
     u=auth_user(request)
     with db() as c:
         with c.cursor() as cur:
-            cur.execute("""SELECT c.*,0 AS student_count FROM teacher_classes c WHERE c.user_id=%s ORDER BY c.name""",(u["id"],));rows=cur.fetchall()
+            cur.execute("""SELECT c.*,(SELECT COUNT(*) FROM class_students s WHERE s.class_id=c.id) AS student_count FROM teacher_classes c WHERE c.user_id=%s ORDER BY c.name""",(u["id"],));rows=cur.fetchall()
     return {"items":rows}
 
 @app.post("/api/zerek/classes")
@@ -575,6 +583,61 @@ def zerek_class_add(body:ZerekClassBody,request:Request):
     return {"ok":True,"id":rid}
 
 
+
+
+class ZerekStudentBody(BaseModel):
+    name:str
+
+def zerek_owned_class(cur,class_id,user_id):
+    cur.execute("SELECT id,name,school_year FROM teacher_classes WHERE id=%s AND user_id=%s",(class_id,user_id))
+    row=cur.fetchone()
+    if not row: raise HTTPException(404,"Сынып табылмады.")
+    return row
+
+@app.get("/api/zerek/classes/{class_id}/students")
+def zerek_students(class_id:int,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            zerek_owned_class(cur,class_id,u["id"])
+            cur.execute("SELECT * FROM class_students WHERE class_id=%s ORDER BY name",(class_id,))
+            rows=cur.fetchall()
+    return {"items":rows}
+
+@app.post("/api/zerek/classes/{class_id}/students")
+def zerek_student_add(class_id:int,body:ZerekStudentBody,request:Request):
+    u=auth_user(request);name=body.name.strip()
+    if not name: raise HTTPException(400,"Оқушы аты-жөні қажет.")
+    with db() as c:
+        with c.cursor() as cur:
+            zerek_owned_class(cur,class_id,u["id"])
+            cur.execute("""INSERT INTO class_students(class_id,name) VALUES(%s,%s)
+            ON CONFLICT(class_id,name) DO UPDATE SET name=EXCLUDED.name RETURNING id""",(class_id,name))
+            sid=cur.fetchone()["id"]
+            cur.execute("UPDATE class_students SET student_code=%s WHERE id=%s",("ST"+str(sid).zfill(4),sid))
+    return {"ok":True,"id":sid}
+
+@app.delete("/api/zerek/classes/{class_id}/students/{student_id}")
+def zerek_student_delete(class_id:int,student_id:int,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            zerek_owned_class(cur,class_id,u["id"])
+            cur.execute("DELETE FROM class_students WHERE id=%s AND class_id=%s",(student_id,class_id))
+    return {"ok":True}
+
+@app.post("/api/zerek/classes/{class_id}/import")
+async def zerek_students_import(class_id:int,request:Request,file:UploadFile=File(...)):
+    u=auth_user(request);data=await file.read();names=parse_class(file.filename,data)
+    with db() as c:
+        with c.cursor() as cur:
+            zerek_owned_class(cur,class_id,u["id"])
+            for name in names:
+                cur.execute("INSERT INTO class_students(class_id,name) VALUES(%s,%s) ON CONFLICT(class_id,name) DO NOTHING",(class_id,name))
+            cur.execute("SELECT id FROM class_students WHERE class_id=%s AND COALESCE(student_code,'')=''",(class_id,))
+            for row in cur.fetchall():
+                cur.execute("UPDATE class_students SET student_code=%s WHERE id=%s",("ST"+str(row["id"]).zfill(4),row["id"]))
+    return {"ok":True,"count":len(names)}
 
 @app.post("/api/zerek/community-kmj")
 def zerek_community_publish(body:ArchiveSaveBody,request:Request):

@@ -110,10 +110,26 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 </section>
 
 <section id="myclasses" class="panel">
- <div class="card"><h2>👥 Менің сыныптарым</h2>
-  <div class="grid"><input id="newClassName" placeholder="Мысалы: 7А"><input id="newClassYear" placeholder="Оқу жылы, мысалы 2026-2027"></div>
+ <div class="card">
+  <h2>👥 Менің сыныптарым</h2>
+  <p class="muted">Әр сыныптың оқушылары PostgreSQL базасында бөлек сақталады.</p>
+  <div class="grid"><input id="newClassName" placeholder="Мысалы: 7А"><input id="newClassYear" value="2026-2027" placeholder="Оқу жылы"></div>
   <button class="green" onclick="createClass()">➕ Сынып қосу</button>
   <div id="myClassList" style="margin-top:14px"></div>
+ </div>
+ <div id="classPanel" class="card" style="display:none">
+  <h2 id="classPanelTitle">Сынып</h2>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+   <button class="blue" onclick="classPanelTab('students')">👥 Оқушылар</button>
+   <button class="green" onclick="useClassForLesson()">▶️ Сабаққа таңдау</button>
+   <button class="gray" onclick="document.getElementById('classPanel').style.display='none'">✕ Жабу</button>
+  </div>
+  <div id="cpStudents">
+   <div class="grid"><input id="cpStudentName" placeholder="Оқушы аты-жөні"><input id="cpStudentFile" type="file" accept=".xlsx,.csv,.txt"></div>
+   <button class="green" onclick="cpAddStudent()">➕ Оқушы қосу</button>
+   <button class="blue" onclick="cpImport()">📥 Excel/CSV импорт</button>
+   <div id="cpStudentList" style="margin-top:14px"></div>
+  </div>
  </div>
 </section>
 
@@ -420,7 +436,71 @@ async function pngExport(el,name){
 function printHtml(title,content){
  const win=window.open("","_blank");if(!win)return alert("Браузер жаңа терезені бұғаттады.");
  const doc=win.document;doc.open();
- doc.write("<!doctype html><html><head><meta charset=\'utf-8\'><title>"+esc(title)+"</title><style>body{font-family:Arial;padding:24px}.card,.ds-card{border:1px solid #aaa;border-radius:12px;padding:14px;margin:10px}.ds-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.task-image{max-width:100%;max-height:300px;object-fit:contain}details{display:none}</style></head><body>"+content+"</body></html>");
+ doc.write("<!doctype html><html><head><meta charset=\'utf-8\'><title>"+esc(title)+"</title><style>body{font-family:Arial;padding:24px}.card,.ds-card{border:1px solid #aaa;border-radius:12px;padding:14px;margin:10px}.ds-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.task-image{max-width:100%;max-height:300px;object-fit:contain}details{display:none}</style></head><body>"+content+"
+<script>
+(function(){
+ let cpClass=null;
+ async function cpApi(url,opt){
+   const r=await fetch(url,opt), text=await r.text(); let d;
+   try{d=JSON.parse(text)}catch(e){throw new Error("Сервер жауабы JSON емес");}
+   if(!r.ok)throw new Error(typeof d.detail==="string"?d.detail:"Сервер қатесі");
+   return d;
+ }
+ window.cpOpen=async function(id,name,year){
+   cpClass={id:id,name:name,year:year};
+   document.getElementById("classPanel").style.display="block";
+   document.getElementById("classPanelTitle").textContent="👥 "+name+" • "+(year||"");
+   await cpLoad();
+   document.getElementById("classPanel").scrollIntoView({behavior:"smooth",block:"start"});
+ };
+ window.classPanelTab=function(){};
+ async function cpLoad(){
+   if(!cpClass)return;
+   const d=await cpApi("/api/zerek/classes/"+cpClass.id+"/students");
+   document.getElementById("cpStudentList").innerHTML=(d.items||[]).map((s,i)=>
+    `<div class="card" style="padding:12px"><b>${i+1}. ${esc(s.name)}</b> <span class="zerek-chip">${esc(s.student_code||"")}</span>
+     <button class="red" style="float:right" onclick="cpDelete(${s.id})">Өшіру</button></div>`
+   ).join("")||'<div class="notice">Бұл сыныпта оқушы жоқ.</div>';
+ }
+ window.cpAddStudent=async function(){
+   if(!cpClass)return;
+   const name=document.getElementById("cpStudentName").value.trim(); if(!name)return;
+   await cpApi("/api/zerek/classes/"+cpClass.id+"/students",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name})});
+   document.getElementById("cpStudentName").value=""; await cpLoad(); await window.loadMyClasses();
+ };
+ window.cpDelete=async function(id){
+   if(!cpClass||!confirm("Оқушыны өшіру керек пе?"))return;
+   await cpApi("/api/zerek/classes/"+cpClass.id+"/students/"+id,{method:"DELETE"}); await cpLoad(); await window.loadMyClasses();
+ };
+ window.cpImport=async function(){
+   if(!cpClass)return;
+   const f=document.getElementById("cpStudentFile").files[0]; if(!f)return alert("Excel/CSV файлын таңдаңыз.");
+   const fd=new FormData();fd.append("file",f);
+   const d=await cpApi("/api/zerek/classes/"+cpClass.id+"/import",{method:"POST",body:fd});
+   alert("✅ "+d.count+" оқушы өңделді."); await cpLoad(); await window.loadMyClasses();
+ };
+ window.useClassForLesson=function(){
+   if(!cpClass)return;
+   lesson.class_name=cpClass.name; renderLesson();
+   document.getElementById("qrClass").value=cpClass.name;
+   alert("✅ "+cpClass.name+" ағымдағы сабаққа таңдалды.");
+ };
+ const originalLoad=window.loadMyClasses;
+ window.loadMyClasses=async function(){
+   try{
+     const d=await cpApi("/api/zerek/classes");
+     document.getElementById("myClassList").innerHTML=(d.items||[]).map(x=>
+       `<div class="card"><b style="font-size:18px">${esc(x.name)}</b> • ${esc(x.school_year||"")}<br>
+        <span class="muted">${x.student_count||0} оқушы</span><div style="margin-top:10px">
+        <button class="blue" onclick="cpOpen(${x.id},${JSON.stringify(x.name)},${JSON.stringify(x.school_year||"")})">📂 Ашу</button></div></div>`
+     ).join("")||'<div class="notice">Әзірге сынып қосылмаған.</div>';
+   }catch(e){document.getElementById("myClassList").innerHTML='<div class="notice">❌ '+esc(e.message)+'</div>';}
+ };
+ setTimeout(()=>window.loadMyClasses(),600);
+})();
+</script>
+
+</body></html>");
  doc.close();setTimeout(()=>win.print(),600);
 }
 
