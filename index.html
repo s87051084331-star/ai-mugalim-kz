@@ -47,6 +47,33 @@ body{background:#f5f7fb}.wrap{max-width:none;margin-left:300px;padding:18px 28px
 .student-public-mode .ustaz-sidebar{display:none!important}
 .student-public-mode .ustaz-main{margin-left:0!important;width:100%!important}
 .student-public-mode .mobile-nav{display:none!important}
+
+/* V5.2.9 clean student public view */
+body.student-public-mode{margin:0!important;padding:0!important;background:#f3f6fb!important;overflow-x:hidden!important}
+body.student-public-mode .ustaz-sidebar,
+body.student-public-mode #ustazSidebar,
+body.student-public-mode aside,
+body.student-public-mode .sidebar,
+body.student-public-mode .mobile-nav,
+body.student-public-mode #mobileNav,
+body.student-public-mode #authOverlay,
+body.student-public-mode #logoutBtn,
+body.student-public-mode #adminTab,
+body.student-public-mode .teacher-only,
+body.student-public-mode .ustaz-topbar,
+body.student-public-mode header{display:none!important}
+body.student-public-mode .ustaz-main,
+body.student-public-mode main,
+body.student-public-mode .main,
+body.student-public-mode .wrap{margin-left:0!important;left:0!important;width:100%!important;max-width:none!important;padding:14px!important;box-sizing:border-box!important}
+body.student-public-mode .panel{max-width:1100px!important;margin:0 auto!important}
+body.student-public-mode .card{width:100%!important;box-sizing:border-box!important}
+body.student-public-mode input,body.student-public-mode textarea,body.student-public-mode select{max-width:100%!important;box-sizing:border-box!important}
+.student-public-header{display:none}
+body.student-public-mode .student-public-header{display:flex!important;align-items:center;gap:12px;max-width:1100px;margin:0 auto 12px;padding:14px 18px;background:#fff;border-radius:0 0 18px 18px;box-shadow:0 5px 20px #0001}
+.student-public-header img{width:46px;height:46px;border-radius:12px}
+.student-public-header b{font-size:19px}.student-public-header span{display:block;color:#64748b;font-size:13px}
+@media(max-width:760px){body.student-public-mode .ustaz-main,body.student-public-mode main,body.student-public-mode .main,body.student-public-mode .wrap{padding:8px!important}.student-public-header{border-radius:0;padding:10px 12px}}
 </style><script>
 window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};
 </script>
@@ -68,7 +95,7 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 .big-action{font-size:17px;padding:14px 20px}
 </style>
 
-</head><body>
+</head><body><div class="student-public-header"><img src="/zerek-logo.png" alt="ZEREK"><div><b>ZEREK Education</b><span>Оқушы тапсырмасы</span></div></div>
 <header><div class="brand-head"><img src="/zerek-logo.png" class="brand-logo" alt="ZEREK Education"><div><h1>Ұстаз AI <span title="V5.2 — жаңа чат интерфейсі" style="font-size:12px;background:#2563eb;padding:5px 8px;border-radius:999px;vertical-align:middle">V5.2</span></h1><div><b>ZEREK Education</b> • Қазақша ЖИ-көмекші</div></div></div><div><b>Жоба авторы: ҚОҚАЙ ЖІГЕР • 📞 <a href="tel:+77051094331" class="author-phone">+7 705 109 4331</a></b></div><div style="display:flex;gap:8px;align-items:center"><select id="langSelect" style="width:auto;margin:0"><option value="kk">Қазақша</option><option value="ru">Русский</option><option value="en">English</option></select><button id="installPwaBtn" class="blue" style="display:none">📲 Орнату</button><button id="logoutBtn" class="gray" style="display:none">Шығу</button></div></header>
 <div class="wrap">
 <div class="card" style="padding:14px 18px"><div class="grid"><div><label>🤖 AI провайдері</label><select id="aiProvider"><option value="auto">Автоматты</option><option value="gemini">Google Gemini</option><option value="openai">OpenAI (ChatGPT модельдері)</option></select></div><div><label>AI күйі</label><div id="aiStatus" class="notice">Тексерілуде...</div></div></div></div><div class="card"><h2>👤 Менің AI лимитім</h2><div class="grid"><div><label>AI таңдау</label><select id="myAiProvider"><option value="auto">Автоматты</option><option value="openai">OpenAI</option><option value="gemini">Gemini</option></select></div><div id="myAiUsage" class="notice">Жүктелуде...</div></div><button class="blue" id="saveMyAi">Сақтау</button></div><div id="lessonBar" class="lessonbar"><b>📚 Ағымдағы сабақ:</b> әлі басталмаған.</div>
@@ -775,10 +802,26 @@ function enterStudentPublicMode(){
  window.ZEREK_STUDENT_PUBLIC=true;
  let a=document.getElementById("authOverlay");if(a)a.style.display="none";
  document.body.classList.add("student-public-mode");
- document.querySelectorAll("#logoutBtn,#adminTab,.teacher-only").forEach(x=>x.style.display="none");
+ document.querySelectorAll("#logoutBtn,#adminTab,.teacher-only,.ustaz-sidebar,#ustazSidebar,.sidebar,aside,.ustaz-topbar,#mobileNav,.mobile-nav").forEach(x=>x.style.display="none");
+ const q=new URLSearchParams(location.search);
+ // Public task links should land directly on the task/student panel, not teacher dashboard.
+ const candidates=q.has("join")||q.has("session")?["qr","attendance","student"]:["tasks","student","qr"];
+ for(const id of candidates){let p=document.getElementById(id);if(p){document.querySelectorAll(".panel").forEach(x=>x.classList.remove("on"));p.classList.add("on");break;}}
+ window.scrollTo(0,0);
  return true;
 }
 if(isStudentPublicMode()){document.addEventListener("DOMContentLoaded",enterStudentPublicMode);enterStudentPublicMode();}
+
+let studentPublicObserver=null;
+function enforceStudentPublicView(){
+ if(!window.ZEREK_STUDENT_PUBLIC)return;
+ document.querySelectorAll(".ustaz-sidebar,#ustazSidebar,.sidebar,aside,.ustaz-topbar,#mobileNav,.mobile-nav,#authOverlay").forEach(x=>x.style.setProperty("display","none","important"));
+ document.querySelectorAll(".ustaz-main,main,.main,.wrap").forEach(x=>{x.style.setProperty("margin-left","0","important");x.style.setProperty("width","100%","important");x.style.setProperty("max-width","none","important")});
+}
+if(isStudentPublicMode()){
+ document.addEventListener("DOMContentLoaded",()=>{enforceStudentPublicView();studentPublicObserver=new MutationObserver(enforceStudentPublicView);studentPublicObserver.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["style","class"]})});
+ setTimeout(enforceStudentPublicView,50);setTimeout(enforceStudentPublicView,500);
+}
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
 async function checkAuth(){if(enterStudentPublicMode())return;try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadHtmlArchiveOptions();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}

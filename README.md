@@ -50,3 +50,11 @@ V5.2.4 FIX: автор телефоны sidebar/footer-де көрінеді; ж
 
 ## V5.2.8 Student public link
 Оқушыға жіберілген student/join/session/task/lesson немесе mode=student сілтемесінде тіркелу терезесі шықпайды. Мұғалім login/approval жүйесі сақталған.
+
+## V5.2.9 — Clean Student View
+- оқушы public link кезінде sidebar/header/admin/mobile nav толық жасырылады
+- оқушы тапсырмасы 100% енмен ортасына шығады
+- ZEREK Education шағын оқушы header-і ғана қалады
+- MutationObserver кеш жүктелетін мұғалім интерфейсін де қайта жасырады
+- student/join/session/task/lesson public режимдері сақталған
+- V5.2.8 және бұрынғы мұғалім функциялары өзгертілген жоқ
