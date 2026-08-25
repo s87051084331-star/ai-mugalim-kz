@@ -42,6 +42,11 @@ body{background:#f5f7fb}.wrap{max-width:none;margin-left:300px;padding:18px 28px
 .reflection-field{margin:12px 0}.reflection-field textarea{min-height:80px}
 .reflection-board:fullscreen{width:100vw;height:100vh;padding:5vw;font-size:1.5rem;overflow:auto;background:white}
 .reflection-board:fullscreen .reflection-choice{font-size:1.4rem;padding:34px}
+
+.student-public-mode #authOverlay{display:none!important}
+.student-public-mode .ustaz-sidebar{display:none!important}
+.student-public-mode .ustaz-main{margin-left:0!important;width:100%!important}
+.student-public-mode .mobile-nav{display:none!important}
 </style><script>
 window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};
 </script>
@@ -760,9 +765,23 @@ async function archiveKmjToHtml(id){
 }
 if($("loadArchiveToHtml"))$("loadArchiveToHtml").onclick=()=>archiveKmjToHtml($("htmlArchiveSelect").value);
 if($("htmlArchiveSelect"))$("htmlArchiveSelect").onchange=e=>{let x=htmlArchiveItems.find(a=>String(a.id)===String(e.target.value));if(x)$("htmlArchiveStatus").innerHTML=`📚 Таңдалды: <b>${esc(x.title||x.topic||"ҚМЖ")}</b> • ${esc(x.class_name||"")} ${esc(x.subject||"")}. «ҚМЖ-ны HTML-ға алу» басыңыз.`};
+
+function isStudentPublicMode(){
+ const q=new URLSearchParams(location.search);
+ return q.has("student")||q.has("join")||q.has("session")||q.has("task")||q.has("lesson")||q.get("mode")==="student"||location.hash.startsWith("#student");
+}
+function enterStudentPublicMode(){
+ if(!isStudentPublicMode())return false;
+ window.ZEREK_STUDENT_PUBLIC=true;
+ let a=document.getElementById("authOverlay");if(a)a.style.display="none";
+ document.body.classList.add("student-public-mode");
+ document.querySelectorAll("#logoutBtn,#adminTab,.teacher-only").forEach(x=>x.style.display="none");
+ return true;
+}
+if(isStudentPublicMode()){document.addEventListener("DOMContentLoaded",enterStudentPublicMode);enterStudentPublicMode();}
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
-async function checkAuth(){try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadHtmlArchiveOptions();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}
+async function checkAuth(){if(enterStudentPublicMode())return;try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadHtmlArchiveOptions();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}
 if($("langSelect"))$("langSelect").onchange=e=>setLang(e.target.value);
 if($("showRegister"))if($("showRegister")) $("showRegister").onclick=()=>{$("loginBox").style.display="none";$("registerBox").style.display="block"};
 if($("showLogin"))if($("showLogin")) $("showLogin").onclick=()=>{$("registerBox").style.display="none";$("loginBox").style.display="block"};

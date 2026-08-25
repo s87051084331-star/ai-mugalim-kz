@@ -1288,6 +1288,10 @@ def i180():return FileResponse(BASE/"icon-180.png")
 def i192():return FileResponse(BASE/"icon-192.png")
 @app.get("/icon-512.png",include_in_schema=False)
 def i512():return FileResponse(BASE/"icon-512.png")
+@app.get("/api/student/public-info")
+def student_public_info():
+    return {"ok":True,"login_required":False,"mode":"student_public"}
+
 @app.get("/")
 def home():return FileResponse(BASE/"index.html")
 app.mount("/static",StaticFiles(directory=BASE),name="static")
