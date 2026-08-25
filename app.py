@@ -919,6 +919,27 @@ async def ai_json(provider: str, prompt: str, user=None, feature="general"):
     summary=" | ".join(f'{p}: HTTP {latest[p]["status"]} — {latest[p]["message"]}' for p in order if p in latest)
     raise HTTPException(503,{"message":"Қолжетімді AI мүмкіндігі аяқталды немесе провайдер жауап бермеді.","summary":summary,"errors":latest})
 
+class ZerekChatBody(BaseModel):
+    message:str
+    provider:str="auto"
+    mode:str="teacher"
+
+@app.post("/api/zerek/chat")
+async def zerek_chat(body:ZerekChatBody, request:Request):
+    u=auth_user(request)
+    role="Қазақстан мұғаліміне арналған қазақша AI көмекші" if body.mode=="teacher" else "Қазақстан оқушысына арналған түсіндіруші AI көмекші"
+    prompt=f"""Сен — {role}. Пайдаланушыға нақты, пайдалы, құрылымды жауап бер.
+Егер сұраныс ҚМЖ туралы болса, оқу мақсаты, сабақ мақсаты, кезеңдер, педагог әрекеті, оқушы әрекеті, бағалау, ресурстар логикасын ұсын.
+Егер тапсырма/тест/дескриптор сұралса, бірден қолдануға дайын нұсқа бер.
+Математикалық формулаларды LaTeX-пен жазуға болады. Жауап тілі пайдаланушы тіліне сай болсын.
+Сұраныс: {body.message}"""
+    ai=await ai_json(body.provider,prompt,u,"zerek_chat")
+    data=ai["data"]
+    if isinstance(data,dict):
+        text=data.get("answer") or data.get("text") or data.get("response") or data.get("content") or json.dumps(data,ensure_ascii=False,indent=2)
+    else:text=str(data)
+    return {"ok":True,"text":text,"provider":ai["provider_used"],"fallback":ai["fallback"]}
+
 @app.get("/api/ai/diagnostics")
 def ai_diagnostics():
     return {"gemini":{"configured":bool(os.getenv("GEMINI_API_KEY","").strip()),"model":os.getenv("GEMINI_MODEL","gemini-3.6-flash")},"openai":{"configured":bool(os.getenv("OPENAI_API_KEY","").strip()),"model":os.getenv("OPENAI_MODEL","gpt-5.6")},"fallback":"selected -> retry x3 -> other provider -> retry x3"}
