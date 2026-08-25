@@ -285,6 +285,8 @@ class KmjGenerateBody(BaseModel):
     topic:str=""
     learning_objective:str=""
     lesson_goal:str=""
+    present:str=""
+    absent:str=""
     duration:int=45
     value:str=""
     weekly_quote:str=""
@@ -316,7 +318,7 @@ async def generate_kmj130(body:KmjGenerateBody,request:Request):
 3) Оқушының іс-әрекеті
 4) Бағалау
 5) Ресурстар.
-Жоғарғы мәліметтер: пән, сынып, бөлім, сабақ тақырыбы, оқу мақсаты, сабақ мақсаты.
+Жоғарғы мәліметтер: пән, сынып, бөлім, сабақ тақырыбы, оқу мақсаты, сабақ мақсаты, қатысқандар, қатыспағандар.
 Құндылық және Аптаның дәйексөзі — мұғалім енгізген мәтінді өзгеріссіз сақта.
 Мұғалім берген ресурстарды орынды кезеңдерге орналастыр, бірақ жаңа URL ойдан шығарма.
 ПӘНГЕ БЕЙІМДЕУ МІНДЕТТІ:
@@ -329,7 +331,7 @@ async def generate_kmj130(body:KmjGenerateBody,request:Request):
 - Уақыттардың қосындысы берілген сабақ ұзақтығына сәйкес келсін.
 Тек JSON қайтар:
 {{"subject":"","class_name":"","section":"","topic":"","learning_objective":"","lesson_goal":"",
-"value":"","weekly_quote":"","duration":45,
+"present":"","absent":"","value":"","weekly_quote":"","duration":45,
 "rows":[{{"stage":"","minutes":0,"teacher_action":"","student_action":"","assessment":"","resources":""}}]}}
 Дерек:
 Пән: {body.subject}
@@ -338,6 +340,8 @@ async def generate_kmj130(body:KmjGenerateBody,request:Request):
 Тақырып: {body.topic}
 Оқу мақсаты: {body.learning_objective}
 Сабақ мақсаты: {body.lesson_goal}
+Қатысқандар: {body.present}
+Қатыспағандар: {body.absent}
 Ұзақтығы: {body.duration}
 Құндылық: {body.value}
 Аптаның дәйексөзі: {body.weekly_quote}
