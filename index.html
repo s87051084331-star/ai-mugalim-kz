@@ -232,7 +232,11 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 </section>
 
 <section id="tasks" class="panel">
-<div class="card"><h2>📝 ҚМЖ → интерактивті HTML тапсырма</h2><div class="grid"><div><label>Формат</label><select id="taskFormat"><option>AI өзі тиімді форматты таңдасын</option><option>Тест</option><option>Сәйкестендіру</option><option>Бос орынды толтыру</option><option>Дұрыс/Бұрыс</option><option>Қысқа жауап</option><option>Аралас тапсырма</option><option>ЕББҚ оқушысына жеңілдетілген</option><option>Деңгейлік A/B/C</option></select></div><div><label>HTML жасауға ұсыныс</label><textarea id="taskInstruction" rows="4" placeholder="Мысалы: 5 тапсырма. 2 тест, 1 сәйкестендіру, 1 бос орын, 1 күрделі есеп. Әр тапсырма 1 балл."></textarea></div></div><div class="grid3">
+<div class="card"><h2>📝 ҚМЖ → интерактивті HTML тапсырма</h2><div class="grid"><div><div class="card archive-html-picker"><h3>📚 Архивтен ҚМЖ алу</h3>
+<div class="grid"><div><label>Менің архивім</label><select id="htmlArchiveSelect"><option value="">— Архивтен ҚМЖ таңдаңыз —</option></select></div>
+<div><label>Әрекет</label><button class="green" id="loadArchiveToHtml">📚 ҚМЖ-ны HTML-ға алу</button></div></div>
+<div id="htmlArchiveStatus" class="notice">Архив таңдалмады. Архивтен бұрынғы ҚМЖ-ны алу AI лимитін жұмсамайды.</div>
+</div><label>Формат</label><select id="taskFormat"><option>AI өзі тиімді форматты таңдасын</option><option>Тест</option><option>Сәйкестендіру</option><option>Бос орынды толтыру</option><option>Дұрыс/Бұрыс</option><option>Қысқа жауап</option><option>Аралас тапсырма</option><option>ЕББҚ оқушысына жеңілдетілген</option><option>Деңгейлік A/B/C</option></select></div><div><label>HTML жасауға ұсыныс</label><textarea id="taskInstruction" rows="4" placeholder="Мысалы: 5 тапсырма. 2 тест, 1 сәйкестендіру, 1 бос орын, 1 күрделі есеп. Әр тапсырма 1 балл."></textarea></div></div><div class="grid3">
 <div><label>Жұмыс түрі</label><select id="workMode"><option value="mixed">AI/ҚМЖ бойынша</option><option value="individual">Жеке жұмыс</option><option value="pair">Жұптық жұмыс</option><option value="group">Топтық жұмыс</option></select></div>
 <div><label>Топ саны</label><input id="groupCount" type="number" min="2" max="8" value="4"></div>
 <div><label>Топ атаулары</label><input id="groupNames" value="1-топ, 2-топ, 3-топ, 4-топ"></div>
@@ -257,7 +261,7 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 <button class="blue" id="designScreenBtn">🖥 Экранға шығару</button>
 <div id="designCanvas" class="design-sheet a4l" style="margin-top:14px"><div class="muted">Алдымен HTML тапсырманы дайындаңыз.</div></div>
 </div>
-<div class="notice" id="kmjTaskSyncStatus">ҚМЖ-дан HTML жасау кезінде тапсырмалар барлық бөлімдерден ізделеді: тапсырмалар, оқушы әрекеті, педагог әрекеті және мұғалім конструкторы.</div>
+<div id="htmlTaskSourceBadge" class="notice">Дереккөз: ағымдағы ҚМЖ / AI</div><div class="notice" id="kmjTaskSyncStatus">ҚМЖ-дан HTML жасау кезінде тапсырмалар барлық бөлімдерден ізделеді: тапсырмалар, оқушы әрекеті, педагог әрекеті және мұғалім конструкторы.</div>
 <button class="blue" id="forceKmjTaskSync">🔎 ҚМЖ тапсырмаларын қайта анықтау</button>
 <div class="card"><h2>Алдын ала қарау</h2><div id="taskPreview">Тапсырма жасалмады.</div></div>
 <div class="card"><h2>🖥 Интерактивті тақта режимі</h2><p class="muted">ҚМЖ/HTML тапсырмасын тақтада орындаңыз. «Тексеру» дұрыс/бұрысын, дұрыс жауапты және әр тапсырманың талдауын көрсетеді.</p><button class="green" id="buildBoard">Тақта тапсырмасын ашу</button> <button class="blue" id="boardFullscreen">Толық экран</button> <button class="gray" id="boardReset">Қайта бастау</button><div id="interactiveBoard" class="interactive-board"><div class="muted">Алдымен HTML тапсырманы дайындаңыз немесе ҚМЖ-дан жіберіңіз.</div></div></div>
@@ -577,7 +581,7 @@ if($("boardReset"))$("boardReset").onclick=buildInteractiveBoard;
 async function loadResources(){try{let r=await fetch("/api/resources"),d=await r.json();if(!r.ok)return;myResources=d.items||[];$("resourceLibrary").innerHTML=myResources.map(x=>`<div class="card"><b>${esc(x.name)}</b> • ${esc(x.resource_type)}<br>${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.url)}</a>`:""}<br><span class="muted">${esc(x.note||"")}</span></div>`).join("")||"Ресурс жоқ."}catch(e){}}
 if($("addResource"))$("addResource").onclick=async()=>{let r=await fetch("/api/resources",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:$("resName").value,resource_type:$("resType").value,url:$("resUrl").value,note:$("resNote").value})}),d=await r.json();if(r.ok){$("resName").value="";$("resUrl").value="";$("resNote").value="";loadResources()}else alert(d.detail||"Қате")};
 if($("generate130"))$("generate130").onclick=async()=>{$("builderStatus").textContent="🤖 ҚМЖ жасалып жатыр...";try{let r=await fetch("/api/kmj/generate130",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subject:$("bSubject").value,class_name:$("bClass").value,section:$("bSection").value,topic:$("bTopic").value,learning_objective:$("bObjective").value,lesson_goal:$("bGoal").value,present:$("bPresent").value,absent:$("bAbsent").value,duration:Number($("bDuration").value||45),value:$("bValue").value,weekly_quote:$("bQuote").value,resources:myResources,extra_instruction:$("bInstruction").value,provider:$("aiProvider").value})}),d=await r.json();if(!r.ok)throw Error(aiErrorText(d.detail));currentKmj130=d.data;renderKmj130();$("builderStatus").innerHTML=`✅ ҚМЖ дайын. AI: <b>${esc(d.mode)}</b> • 🧩 HTML тапсырмаға немесе 🖥 тақтаға бірден жіберуге болады.`}catch(e){$("builderStatus").textContent="❌ "+e.message}};
-if($("saveKmjArchive"))$("saveKmjArchive").onclick=async()=>{if(!currentKmj130)return alert("Алдымен ҚМЖ жасаңыз.");let r=await fetch("/api/archive/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:currentKmj130.topic||"ҚМЖ",subject:currentKmj130.subject||"",class_name:currentKmj130.class_name||"",topic:currentKmj130.topic||"",learning_objective:currentKmj130.learning_objective||"",kmj:currentKmj130})}),d=await r.json();alert(r.ok?"Архивке сақталды.":d.detail||"Қате")};
+if($("saveKmjArchive"))$("saveKmjArchive").onclick=async()=>{if(!currentKmj130)return alert("Алдымен ҚМЖ жасаңыз.");let r=await fetch("/api/archive/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:currentKmj130.topic||"ҚМЖ",subject:currentKmj130.subject||"",class_name:currentKmj130.class_name||"",topic:currentKmj130.topic||"",learning_objective:currentKmj130.learning_objective||"",kmj:currentKmj130})}),d=await r.json();alert(r.ok?"Архивке сақталды.":d.detail||"Қате");if(r.ok)loadHtmlArchiveOptions()};
 async function loadArchive(){let r=await fetch("/api/archive"),d=await r.json();if(!r.ok)return;$("archiveList").innerHTML=(d.items||[]).map(x=>`<div class="card"><b>${esc(x.title)}</b><br>${esc(x.subject||"")} • ${esc(x.class_name||"")}<br><span class="muted">${esc(x.learning_objective||"")}</span><br><button class="green" onclick="openArchive(${x.id})">Ашу — тегін</button> <button class="red" onclick="deleteArchive(${x.id})">Өшіру</button></div>`).join("")||"Архив бос."}
 window.openArchive=async id=>{let r=await fetch("/api/archive/"+id),d=await r.json();if(r.ok){currentKmj130=d.item.kmj_json;renderKmj130();document.querySelector('#tabs button[data-p="kmjbuilder"]')?.click()}};
 window.deleteArchive=async id=>{if(confirm("Өшіру керек пе?")){await fetch("/api/archive/"+id,{method:"DELETE"});loadArchive()}};
@@ -722,9 +726,43 @@ function syncKmjTasksToHtml(){
 }
 
 if($("forceKmjTaskSync"))$("forceKmjTaskSync").onclick=()=>{let s=syncKmjTasksToHtml();$("kmjTaskSyncStatus").innerHTML=s.ok?`✅ ${s.tasks.length} тапсырма анықталды және HTML бөліміне берілді.`:"❌ Тапсырма анықталмады. ҚМЖ конструкторына тапсырма қосыңыз.";};
+
+let htmlArchiveItems=[];
+async function loadHtmlArchiveOptions(){
+ try{
+  let r=await fetch("/api/archive"),d=await r.json();
+  if(!r.ok)throw Error(d.detail||"Архив ашылмады");
+  htmlArchiveItems=d.items||[];
+  if($("htmlArchiveSelect"))$("htmlArchiveSelect").innerHTML=`<option value="">— Архивтен ҚМЖ таңдаңыз —</option>`+htmlArchiveItems.map(x=>`<option value="${x.id}">${esc(x.title||x.topic||"ҚМЖ")} • ${esc(x.class_name||"")} ${esc(x.subject||"")}</option>`).join("");
+ }catch(e){if($("htmlArchiveStatus"))$("htmlArchiveStatus").textContent="❌ "+e.message}
+}
+async function archiveKmjToHtml(id){
+ if(!id)return alert("Архивтен ҚМЖ таңдаңыз.");
+ $("htmlArchiveStatus").textContent="📚 Архивтегі ҚМЖ ашылып жатыр...";
+ try{
+  let r=await fetch("/api/archive/"+id),d=await r.json();
+  if(!r.ok)throw Error(d.detail||"ҚМЖ ашылмады");
+  let item=d.item||{},k=item.kmj_json||item.kmj||{};
+  // PostgreSQL JSONB may already be an object; support string just in case.
+  if(typeof k==="string"){try{k=JSON.parse(k)}catch(_){}}
+  currentKmj130=k;
+  window.lastKmjAnalysis=k;
+  // Preserve archive metadata when old records lack fields inside JSON.
+  k.subject=k.subject||item.subject||"";
+  k.class_name=k.class_name||item.class_name||"";
+  k.topic=k.topic||item.topic||item.title||"";
+  k.learning_objective=k.learning_objective||item.learning_objective||"";
+  let s=syncKmjTasksToHtml();
+  if(!s.ok)throw Error("Архивтегі ҚМЖ-дан тапсырма мәтіні анықталмады. ҚМЖ-ны ашып, тапсырма конструкторында кемінде бір тапсырма қосыңыз.");
+  $("htmlTaskSourceBadge").innerHTML=`Дереккөз: 📚 Архив — <b>${esc(k.topic||item.title||"ҚМЖ")}</b>`;$("htmlArchiveStatus").innerHTML=`✅ <b>${esc(k.topic||item.title||"ҚМЖ")}</b> архивтен алынды • ${esc(k.class_name||"")} ${esc(k.subject||"")} • <b>${s.tasks.length} тапсырма</b> анықталды • AI кредит жұмсалмады.`;
+  renderTaskPreview?.();renderGroups?.();
+ }catch(e){$("htmlArchiveStatus").textContent="❌ "+e.message}
+}
+if($("loadArchiveToHtml"))$("loadArchiveToHtml").onclick=()=>archiveKmjToHtml($("htmlArchiveSelect").value);
+if($("htmlArchiveSelect"))$("htmlArchiveSelect").onchange=e=>{let x=htmlArchiveItems.find(a=>String(a.id)===String(e.target.value));if(x)$("htmlArchiveStatus").innerHTML=`📚 Таңдалды: <b>${esc(x.title||x.topic||"ҚМЖ")}</b> • ${esc(x.class_name||"")} ${esc(x.subject||"")}. «ҚМЖ-ны HTML-ға алу» басыңыз.`};
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
-async function checkAuth(){try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}
+async function checkAuth(){try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadHtmlArchiveOptions();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}
 if($("langSelect"))$("langSelect").onchange=e=>setLang(e.target.value);
 if($("showRegister"))if($("showRegister")) $("showRegister").onclick=()=>{$("loginBox").style.display="none";$("registerBox").style.display="block"};
 if($("showLogin"))if($("showLogin")) $("showLogin").onclick=()=>{$("registerBox").style.display="none";$("loginBox").style.display="block"};
