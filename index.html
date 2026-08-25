@@ -434,7 +434,14 @@ html.zerek-student-public body .student-public-allowed{visibility:visible}
 
 <section id="analysis" class="panel"><div class="card"><h2>🤖 Әр оқушыға жеке талдау</h2><select id="analysisStudent"></select><button class="blue" id="analyzeStudent">Талдау жасау</button><div id="studentAnalysis" class="notice">Оқушыны таңдаңыз.</div></div></section>
 
-<section id="journal" class="panel"><div class="card"><h2>📊 Сабақ журналы</h2><button class="blue" id="exportCsv">CSV жүктеу</button><div style="overflow:auto"><table><thead><tr><th>#</th><th>Оқушы</th><th>ID</th><th>Қатысу</th><th>Тапсырма</th><th>Оқу мақсаты</th><th>Мониторинг</th><th>Мұғалім бағасы</th></tr></thead><tbody id="journalBody"></tbody></table></div></div></section>
+<section id="journal" class="panel">
+<div class="card" id="smartJournal"><h2>📊 Ақылды журнал</h2>
+<div class="grid3"><div><label>Сынып</label><input id="sjClass" placeholder="7А"></div><div><label>Оқу жылы</label><input id="sjYear" value="2026-2027"></div><div><label>Тоқсан</label><select id="sjQuarter"><option value="1">I тоқсан</option><option value="2">II тоқсан</option><option value="3">III тоқсан</option><option value="4">IV тоқсан</option></select></div></div>
+<button class="blue" id="sjQuarterBtn">📈 Тоқсандық қорытынды</button> <button class="green" id="sjYearBtn">🏆 Жылдық қорытынды</button>
+<div id="sjAlert" class="notice" style="margin-top:10px">Қорытындыны шығару үшін сыныпты таңдаңыз.</div>
+<div id="sjTable" style="overflow:auto;margin-top:12px"></div>
+</div>
+<div class="card"><h2>📊 Сабақ журналы</h2><button class="blue" id="exportCsv">CSV жүктеу</button><div style="overflow:auto"><table><thead><tr><th>#</th><th>Оқушы</th><th>ID</th><th>Қатысу</th><th>Тапсырма</th><th>Оқу мақсаты</th><th>Мониторинг</th><th>Мұғалім бағасы</th></tr></thead><tbody id="journalBody"></tbody></table></div></div></section>
 </div>
 
 <div id="studentTaskScreen" style="display:none;position:fixed;inset:0;background:#f3f6fb;z-index:9999;padding:20px;overflow:auto"><div class="card" style="max-width:760px;margin:auto"><h2 id="studentTaskTitle">Тапсырма</h2><input id="studentTaskId" placeholder="ST01"><input id="studentTaskName" placeholder="Аты-жөні"><div id="studentTasks"></div><button class="green" id="submitStudentTasks">Жауаптарды жіберу</button><div id="studentTaskResult" class="notice"></div></div></div>
@@ -1006,6 +1013,23 @@ function updateFormatUI(){
 if($("kmjMainFormat"))$("kmjMainFormat").onchange=updateFormatUI;
 if($("toggleFormatMix"))$("toggleFormatMix").onclick=()=>{$("formatMixBox").style.display=$("formatMixBox").style.display==="none"?"grid":"none"};
 setTimeout(updateFormatUI,0);
+
+async function smartQuarter(){
+ let cls=$("sjClass").value.trim();if(!cls)return alert("Сыныпты енгізіңіз.");
+ let q=$("sjQuarter").value,y=$("sjYear").value.trim();
+ let r=await fetch(`/api/journal/summary?class_name=${encodeURIComponent(cls)}&school_year=${encodeURIComponent(y)}&quarter=${q}`),d=await r.json();
+ if(!r.ok)return $("sjAlert").textContent="❌ "+(d.detail||"Қате");
+ $("sjAlert").textContent=d.note||"";
+ $("sjTable").innerHTML=`<table class="kmj-table"><thead><tr><th>Оқушы</th><th>Қатысу</th><th>Күнделікті</th><th>БЖБ</th><th>ТЖБ</th><th>Ұсыныс</th><th>Назар</th></tr></thead><tbody>${d.items.map(x=>`<tr><td>${esc(x.student_name)}</td><td>${x.attendance_pct}%<br><small>Қал: ${x.absent}, кеш: ${x.late}</small></td><td>${x.lesson_pct==null?"—":Number(x.lesson_pct).toFixed(1)+"%"}</td><td>${x.bjb_pct==null?"—":x.bjb_pct+"%"}</td><td>${x.tjb_pct==null?"—":x.tjb_pct+"%"}</td><td><b>${x.suggested_grade??"—"}</b>${x.suggested_pct!=null?` (${x.suggested_pct}%)`:""}</td><td>${x.attendance_pct<80?"⚠️ Қатысу төмен":x.suggested_pct!=null&&x.suggested_pct<40?"⚠️ Нәтиже төмен":"✅"}</td></tr>`).join("")}</tbody></table>`;
+}
+async function smartYear(){
+ let cls=$("sjClass").value.trim();if(!cls)return alert("Сыныпты енгізіңіз.");let y=$("sjYear").value.trim();
+ let r=await fetch(`/api/journal/year?class_name=${encodeURIComponent(cls)}&school_year=${encodeURIComponent(y)}`),d=await r.json();if(!r.ok)return $("sjAlert").textContent="❌ "+(d.detail||"Қате");
+ $("sjAlert").textContent=d.note||"";
+ $("sjTable").innerHTML=`<table class="kmj-table"><thead><tr><th>Оқушы</th><th>I</th><th>II</th><th>III</th><th>IV</th><th>Қатысу</th><th>Ұсынылатын жылдық</th></tr></thead><tbody>${d.items.map(x=>`<tr><td>${esc(x.student_name)}</td>${["1","2","3","4"].map(q=>`<td>${x.quarters[q]==null?"—":Number(x.quarters[q]).toFixed(2)}</td>`).join("")}<td>${x.attendance_pct}%</td><td><b>${x.suggested_year_grade??"—"}</b></td></tr>`).join("")}</tbody></table>`;
+}
+if($("sjQuarterBtn"))$("sjQuarterBtn").onclick=smartQuarter;
+if($("sjYearBtn"))$("sjYearBtn").onclick=smartYear;
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
 async function checkAuth(){if(enterStudentPublicMode())return;try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadHtmlArchiveOptions();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}

@@ -133,6 +133,36 @@ def init_db():
               created_at TIMESTAMPTZ DEFAULT NOW(),
               UNIQUE(class_id,name)
             )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS journal_entries(
+              id BIGSERIAL PRIMARY KEY,
+              user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+              class_name TEXT NOT NULL,
+              student_id TEXT NOT NULL,
+              student_name TEXT NOT NULL,
+              lesson_date DATE NOT NULL DEFAULT CURRENT_DATE,
+              quarter INTEGER NOT NULL DEFAULT 1,
+              attendance TEXT NOT NULL DEFAULT 'present',
+              lesson_score NUMERIC(7,2),
+              lesson_max NUMERIC(7,2),
+              teacher_grade NUMERIC(4,2),
+              note TEXT DEFAULT '',
+              created_at TIMESTAMPTZ DEFAULT NOW(),
+              UNIQUE(user_id,class_name,student_id,lesson_date)
+            )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS summative_scores(
+              id BIGSERIAL PRIMARY KEY,
+              user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+              class_name TEXT NOT NULL,
+              student_id TEXT NOT NULL,
+              student_name TEXT NOT NULL,
+              school_year TEXT NOT NULL,
+              quarter INTEGER NOT NULL,
+              assessment_type TEXT NOT NULL,
+              title TEXT DEFAULT '',
+              score NUMERIC(7,2) NOT NULL,
+              max_score NUMERIC(7,2) NOT NULL,
+              created_at TIMESTAMPTZ DEFAULT NOW()
+            )""")
             cur.execute("""CREATE TABLE IF NOT EXISTS ai_usage(
               id BIGSERIAL PRIMARY KEY,
               user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -687,6 +717,105 @@ def export_kmj_docx(body:ArchiveSaveBody,request:Request):
         c[1].text=str(row.get("teacher_action",""));c[2].text=str(row.get("student_action",""));c[3].text=str(row.get("assessment",""));c[4].text=str(row.get("resources",""))
     path=BASE/f"kmj_{secrets.token_hex(5)}.docx";d.save(path)
     return FileResponse(path,filename="ZEREK_KMJ.docx",media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
+
+
+class JournalEntryBody(BaseModel):
+    class_name:str
+    student_id:str
+    student_name:str
+    lesson_date:str
+    quarter:int=1
+    attendance:str="present"
+    lesson_score:float|None=None
+    lesson_max:float|None=None
+    teacher_grade:float|None=None
+    note:str=""
+
+class SummativeBody(BaseModel):
+    class_name:str
+    student_id:str
+    student_name:str
+    school_year:str
+    quarter:int
+    assessment_type:str
+    title:str=""
+    score:float
+    max_score:float
+
+@app.post("/api/journal/entry")
+def journal_entry(body:JournalEntryBody,request:Request):
+    u=auth_user(request)
+    att=body.attendance if body.attendance in ("present","absent","late","excused") else "present"
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""INSERT INTO journal_entries(user_id,class_name,student_id,student_name,lesson_date,quarter,attendance,lesson_score,lesson_max,teacher_grade,note)
+              VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+              ON CONFLICT(user_id,class_name,student_id,lesson_date) DO UPDATE SET
+              student_name=EXCLUDED.student_name,quarter=EXCLUDED.quarter,attendance=EXCLUDED.attendance,
+              lesson_score=EXCLUDED.lesson_score,lesson_max=EXCLUDED.lesson_max,teacher_grade=EXCLUDED.teacher_grade,note=EXCLUDED.note""",
+              (u["id"],body.class_name,body.student_id,body.student_name,body.lesson_date,max(1,min(4,body.quarter)),att,body.lesson_score,body.lesson_max,body.teacher_grade,body.note))
+    return {"ok":True}
+
+@app.post("/api/journal/summative")
+def journal_summative(body:SummativeBody,request:Request):
+    u=auth_user(request)
+    typ=body.assessment_type.upper()
+    if typ not in ("BJB","TJB"):raise HTTPException(400,"assessment_type BJB немесе TJB болуы керек.")
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""INSERT INTO summative_scores(user_id,class_name,student_id,student_name,school_year,quarter,assessment_type,title,score,max_score)
+              VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",(u["id"],body.class_name,body.student_id,body.student_name,body.school_year,max(1,min(4,body.quarter)),typ,body.title,body.score,body.max_score))
+    return {"ok":True}
+
+@app.get("/api/journal/summary")
+def journal_summary(class_name:str,school_year:str,quarter:int=1,request:Request=None):
+    u=auth_user(request);q=max(1,min(4,quarter))
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""SELECT student_id,MAX(student_name) student_name,
+              COUNT(*) lessons,
+              COUNT(*) FILTER(WHERE attendance='present') present,
+              COUNT(*) FILTER(WHERE attendance='late') late,
+              COUNT(*) FILTER(WHERE attendance='absent') absent,
+              AVG(CASE WHEN lesson_max>0 THEN lesson_score/lesson_max*100 END) lesson_pct,
+              AVG(teacher_grade) teacher_avg
+              FROM journal_entries WHERE user_id=%s AND class_name=%s AND quarter=%s
+              GROUP BY student_id ORDER BY student_name""",(u["id"],class_name,q));rows=cur.fetchall()
+            cur.execute("""SELECT student_id,assessment_type,
+              SUM(score) score,SUM(max_score) max_score
+              FROM summative_scores WHERE user_id=%s AND class_name=%s AND school_year=%s AND quarter=%s
+              GROUP BY student_id,assessment_type""",(u["id"],class_name,school_year,q));sums=cur.fetchall()
+    smap={}
+    for s in sums:smap.setdefault(s["student_id"],{})[s["assessment_type"]]=s
+    out=[]
+    for r in rows:
+        x=dict(r);x["attendance_pct"]=round(((x["present"]+x["late"])/x["lessons"]*100) if x["lessons"] else 0,1)
+        for typ in ("BJB","TJB"):
+            s=smap.get(x["student_id"],{}).get(typ);x[typ.lower()+"_pct"]=round(float(s["score"])/float(s["max_score"])*100,1) if s and s["max_score"] else None
+        vals=[v for v in [x.get("bjb_pct"),x.get("tjb_pct")] if v is not None]
+        x["suggested_pct"]=round(sum(vals)/len(vals),1) if vals else (round(float(x["lesson_pct"]),1) if x["lesson_pct"] is not None else None)
+        p=x["suggested_pct"];x["suggested_grade"]=5 if p is not None and p>=85 else 4 if p is not None and p>=65 else 3 if p is not None and p>=40 else 2 if p is not None else None
+        out.append(x)
+    return {"items":out,"quarter":q,"note":"Ұсынылатын баға ғана. Соңғы қорытындыны мұғалім бекітеді."}
+
+@app.get("/api/journal/year")
+def journal_year(class_name:str,school_year:str,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""SELECT student_id,MAX(student_name) student_name,quarter,
+              AVG(teacher_grade) teacher_avg,
+              COUNT(*) lessons,COUNT(*) FILTER(WHERE attendance IN ('present','late')) attended
+              FROM journal_entries WHERE user_id=%s AND class_name=%s GROUP BY student_id,quarter ORDER BY student_name,quarter""",(u["id"],class_name));rows=cur.fetchall()
+    by={}
+    for r in rows:
+        x=by.setdefault(r["student_id"],{"student_id":r["student_id"],"student_name":r["student_name"],"quarters":{},"attendance_total":0,"lessons_total":0})
+        x["quarters"][str(r["quarter"])]=float(r["teacher_avg"]) if r["teacher_avg"] is not None else None;x["attendance_total"]+=r["attended"];x["lessons_total"]+=r["lessons"]
+    out=[]
+    for x in by.values():
+        gs=[v for v in x["quarters"].values() if v is not None];x["suggested_year_grade"]=round(sum(gs)/len(gs)) if gs else None;x["attendance_pct"]=round(x["attendance_total"]/x["lessons_total"]*100,1) if x["lessons_total"] else 0;out.append(x)
+    return {"items":out,"note":"Жылдық баға — мұғалімге ұсыныс. Ресми бағаны мұғалім бекітеді."}
 
 
 # ---------------- File parsing ----------------
