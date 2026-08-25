@@ -74,6 +74,14 @@ body.student-public-mode .student-public-header{display:flex!important;align-ite
 .student-public-header img{width:46px;height:46px;border-radius:12px}
 .student-public-header b{font-size:19px}.student-public-header span{display:block;color:#64748b;font-size:13px}
 @media(max-width:760px){body.student-public-mode .ustaz-main,body.student-public-mode main,body.student-public-mode .main,body.student-public-mode .wrap{padding:8px!important}.student-public-header{border-radius:0;padding:10px 12px}}
+
+body.student-public-mode > *{visibility:visible}
+body.student-public-mode .student-public-header{display:flex!important}
+body.student-public-mode .ustaz-shell{display:block!important;width:100%!important}
+body.student-public-mode .ustaz-content{margin:0!important;width:100%!important;max-width:none!important}
+body.student-public-mode #tabs{display:none!important}
+body.student-public-mode .panel:not(.on){display:none!important}
+body.student-public-mode .panel.on{display:block!important;width:min(1100px,100%)!important;margin:0 auto!important}
 </style><script>
 window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};
 </script>
@@ -95,7 +103,20 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 .big-action{font-size:17px;padding:14px 20px}
 </style>
 
-</head><body><div class="student-public-header"><img src="/zerek-logo.png" alt="ZEREK"><div><b>ZEREK Education</b><span>Оқушы тапсырмасы</span></div></div>
+<style id="student-public-early-hide">
+html.zerek-student-public body > *{visibility:hidden}
+html.zerek-student-public body .student-public-header,
+html.zerek-student-public body .student-public-allowed{visibility:visible}
+</style>
+<script>
+(function(){
+ const q=new URLSearchParams(location.search);
+ if(q.get("mode")==="student"||q.has("lesson")||q.has("join")||q.has("session")||q.has("task")){
+   document.documentElement.classList.add("zerek-student-public");
+ }
+})();
+</script>
+</head><body><div class="student-public-header student-public-allowed"><img src="/zerek-logo.png" alt="ZEREK"><div><b>ZEREK Education</b><span>Оқушы тапсырмасы</span></div></div>
 <header><div class="brand-head"><img src="/zerek-logo.png" class="brand-logo" alt="ZEREK Education"><div><h1>Ұстаз AI <span title="V5.2 — жаңа чат интерфейсі" style="font-size:12px;background:#2563eb;padding:5px 8px;border-radius:999px;vertical-align:middle">V5.2</span></h1><div><b>ZEREK Education</b> • Қазақша ЖИ-көмекші</div></div></div><div><b>Жоба авторы: ҚОҚАЙ ЖІГЕР • 📞 <a href="tel:+77051094331" class="author-phone">+7 705 109 4331</a></b></div><div style="display:flex;gap:8px;align-items:center"><select id="langSelect" style="width:auto;margin:0"><option value="kk">Қазақша</option><option value="ru">Русский</option><option value="en">English</option></select><button id="installPwaBtn" class="blue" style="display:none">📲 Орнату</button><button id="logoutBtn" class="gray" style="display:none">Шығу</button></div></header>
 <div class="wrap">
 <div class="card" style="padding:14px 18px"><div class="grid"><div><label>🤖 AI провайдері</label><select id="aiProvider"><option value="auto">Автоматты</option><option value="gemini">Google Gemini</option><option value="openai">OpenAI (ChatGPT модельдері)</option></select></div><div><label>AI күйі</label><div id="aiStatus" class="notice">Тексерілуде...</div></div></div></div><div class="card"><h2>👤 Менің AI лимитім</h2><div class="grid"><div><label>AI таңдау</label><select id="myAiProvider"><option value="auto">Автоматты</option><option value="openai">OpenAI</option><option value="gemini">Gemini</option></select></div><div id="myAiUsage" class="notice">Жүктелуде...</div></div><button class="blue" id="saveMyAi">Сақтау</button></div><div id="lessonBar" class="lessonbar"><b>📚 Ағымдағы сабақ:</b> әлі басталмаған.</div>
@@ -444,7 +465,7 @@ function renderGroups(){
  $("screenGroup").innerHTML=Object.keys(groups).map(g=>`<option>${esc(g)}</option>`).join("");
  typesetMath($("groupBoard"));
 }
-if($("publishTasks")) if($("publishTasks")) $("publishTasks").onclick=async()=>{if(!generatedTasks.length)return alert("Алдымен тапсырма жасаңыз");let r=await fetch("/api/lesson/publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subject:lesson.subject||"",class_name:lesson.class_name||"",topic:lesson.topic||"",learning_objective:lesson.learning_objective||"",tasks:generatedTasks})}),d=await r.json();publishedCode=d.code;$("publishInfo").innerHTML=`✅ Жарияланды. Код: <b>${d.code}</b><br>Оқушы сілтемесі: ${location.origin}/?lesson=${d.code}`};
+if($("publishTasks")) if($("publishTasks")) $("publishTasks").onclick=async()=>{if(!generatedTasks.length)return alert("Алдымен тапсырма жасаңыз");let r=await fetch("/api/lesson/publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subject:lesson.subject||"",class_name:lesson.class_name||"",topic:lesson.topic||"",learning_objective:lesson.learning_objective||"",tasks:generatedTasks})}),d=await r.json();publishedCode=d.code;$("publishInfo").innerHTML=`✅ Жарияланды. Код: <b>${d.code}</b><br>Оқушы сілтемесі: ${location.origin}/?mode=student&lesson=${d.code}`};
 if($("addStudent")) if($("addStudent")) $("addStudent").onclick=()=>{let n=$("newStudent").value.trim();if(n){students.push({name:n});$("newStudent").value="";renderStudents()}};
 if($("clearClass")) if($("clearClass")) $("clearClass").onclick=()=>{if(confirm("Тізімді тазалау керек пе?")){students=[];attendance={};renderStudents()}};
 if($("importClass")) if($("importClass")) $("importClass").onclick=async()=>{let f=$("classFile").files[0];if(!f)return alert("Файл таңдаңыз");let fd=new FormData();fd.append("file",f);let r=await fetch("/api/import-class",{method:"POST",body:fd}),d=await r.json();students=d.students.map(name=>({name}));attendance={};$("classStatus").textContent=d.message;renderStudents()};
@@ -506,7 +527,7 @@ async function splitNow(){let n=Math.max(2,Math.min(8,Number($("splitGroupCount"
 if($("splitStudents")) if($("splitStudents")) $("splitStudents").onclick=splitNow;if($("reshuffleGroups")) if($("reshuffleGroups")) $("reshuffleGroups").onclick=splitNow;
 if($("splitScreen")) if($("splitScreen")) $("splitScreen").onclick=()=>{if(!studentGroups.length)return alert("Алдымен топтарға бөліңіз.");$("presentationBoard").innerHTML=`<h2>🎲 ${esc(lesson.topic||"Топқа бөлу")}</h2><div class="group-grid">${studentGroups.map(g=>`<div class="group-card"><h3>${esc(g.name)}</h3>${g.members.map(s=>`<div class="group-member">${esc(s.id)} — <b>${esc(s.name)}</b> <span class="group-token">${esc(s._groupToken||"")}</span></div>`).join("")}</div>`).join("")}</div>`;if($("presentationBoard").requestFullscreen)$("presentationBoard").requestFullscreen().catch(()=>{})};
 renderSplit();
-if($("copyStudentLink")) if($("copyStudentLink")) $("copyStudentLink").onclick=async()=>{if(!publishedCode)return alert("Алдымен тапсырманы жариялаңыз.");let u=location.origin+"/?lesson="+publishedCode;try{await navigator.clipboard.writeText(u);alert("Оқушы сілтемесі көшірілді.")}catch(e){prompt("Сілтемені көшіріңіз:",u)}};
+if($("copyStudentLink")) if($("copyStudentLink")) $("copyStudentLink").onclick=async()=>{if(!publishedCode)return alert("Алдымен тапсырманы жариялаңыз.");let u=studentPublicUrl(publishedCode);try{await navigator.clipboard.writeText(u);alert("Оқушы сілтемесі көшірілді.")}catch(e){prompt("Сілтемені көшіріңіз:",u)}};
 if($("showAllScreen")) if($("showAllScreen")) $("showAllScreen").onclick=()=>{$("presentationBoard").innerHTML=`<h2>${esc(lesson.topic||"Сабақ тапсырмалары")}</h2>`+generatedTasks.map(renderTaskCard).join("");typesetMath($("presentationBoard"));if($("presentationBoard").requestFullscreen)$("presentationBoard").requestFullscreen().catch(()=>{})};
 if($("showGroupScreen")) if($("showGroupScreen")) $("showGroupScreen").onclick=()=>{let g=$("screenGroup").value,ts=generatedTasks.filter(t=>(t.group_name||"")===g);if(!ts.length){const names=$("groupNames").value.split(",").map(x=>x.trim()).filter(Boolean),idx=names.indexOf(g);ts=generatedTasks.filter((t,i)=>i%Math.max(1,names.length)===idx)}$("presentationBoard").innerHTML=`<h2>👥 ${esc(g)}</h2>`+ts.map(renderTaskCard).join("");typesetMath($("presentationBoard"));if($("presentationBoard").requestFullscreen)$("presentationBoard").requestFullscreen().catch(()=>{})};
 if($("exitScreen")) if($("exitScreen")) $("exitScreen").onclick=()=>{if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})};
@@ -795,11 +816,15 @@ if($("htmlArchiveSelect"))$("htmlArchiveSelect").onchange=e=>{let x=htmlArchiveI
 
 function isStudentPublicMode(){
  const q=new URLSearchParams(location.search);
- return q.has("student")||q.has("join")||q.has("session")||q.has("task")||q.has("lesson")||q.get("mode")==="student"||location.hash.startsWith("#student");
+ // New canonical public URL: ?mode=student&lesson=CODE
+ // Backward compatibility: any ?lesson=CODE link is also a student-public link.
+ return q.get("mode")==="student" || q.has("lesson") || q.has("student") || q.has("join") || q.has("session") || q.has("task") || location.hash.startsWith("#student");
 }
 function enterStudentPublicMode(){
  if(!isStudentPublicMode())return false;
  window.ZEREK_STUDENT_PUBLIC=true;
+ document.documentElement.classList.remove("zerek-student-public");
+ document.body.classList.add("student-public-mode");
  let a=document.getElementById("authOverlay");if(a)a.style.display="none";
  document.body.classList.add("student-public-mode");
  document.querySelectorAll("#logoutBtn,#adminTab,.teacher-only,.ustaz-sidebar,#ustazSidebar,.sidebar,aside,.ustaz-topbar,#mobileNav,.mobile-nav").forEach(x=>x.style.display="none");
@@ -821,6 +846,13 @@ function enforceStudentPublicView(){
 if(isStudentPublicMode()){
  document.addEventListener("DOMContentLoaded",()=>{enforceStudentPublicView();studentPublicObserver=new MutationObserver(enforceStudentPublicView);studentPublicObserver.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["style","class"]})});
  setTimeout(enforceStudentPublicView,50);setTimeout(enforceStudentPublicView,500);
+}
+
+function studentPublicUrl(code){
+ const u=new URL(location.origin+"/");
+ u.searchParams.set("mode","student");
+ u.searchParams.set("lesson",code);
+ return u.toString();
 }
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
