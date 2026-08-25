@@ -257,6 +257,8 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 <button class="blue" id="designScreenBtn">🖥 Экранға шығару</button>
 <div id="designCanvas" class="design-sheet a4l" style="margin-top:14px"><div class="muted">Алдымен HTML тапсырманы дайындаңыз.</div></div>
 </div>
+<div class="notice" id="kmjTaskSyncStatus">ҚМЖ-дан HTML жасау кезінде тапсырмалар барлық бөлімдерден ізделеді: тапсырмалар, оқушы әрекеті, педагог әрекеті және мұғалім конструкторы.</div>
+<button class="blue" id="forceKmjTaskSync">🔎 ҚМЖ тапсырмаларын қайта анықтау</button>
 <div class="card"><h2>Алдын ала қарау</h2><div id="taskPreview">Тапсырма жасалмады.</div></div>
 <div class="card"><h2>🖥 Интерактивті тақта режимі</h2><p class="muted">ҚМЖ/HTML тапсырмасын тақтада орындаңыз. «Тексеру» дұрыс/бұрысын, дұрыс жауапты және әр тапсырманың талдауын көрсетеді.</p><button class="green" id="buildBoard">Тақта тапсырмасын ашу</button> <button class="blue" id="boardFullscreen">Толық экран</button> <button class="gray" id="boardReset">Қайта бастау</button><div id="interactiveBoard" class="interactive-board"><div class="muted">Алдымен HTML тапсырманы дайындаңыз немесе ҚМЖ-дан жіберіңіз.</div></div></div>
 </section>
@@ -562,7 +564,7 @@ function ensureCurrentKmj(){
 }
 function kmjRowsToTaskInstruction(){ensureCurrentKmj();if(!currentKmj130)return "";return (currentKmj130.rows||[]).map((r,i)=>`${i+1}) ${r.stage}: ${r.student_action||r.teacher_action||''} | Бағалау: ${r.assessment||''} | Ресурс: ${r.resources||''}`).join("\n")}
 function sendKmjToHtml(){ensureCurrentKmj();if(!currentKmj130)return alert("ҚМЖ табылмады. Алдымен ҚМЖ файлын оқытыңыз немесе ҚМЖ құрастырыңыз.");lesson.subject=currentKmj130.subject||"";lesson.class_name=currentKmj130.class_name||"";lesson.topic=currentKmj130.topic||"";lesson.learning_objective=currentKmj130.learning_objective||"";lesson.lesson_goal=currentKmj130.lesson_goal||"";$("subject").value=lesson.subject;$("className").value=lesson.class_name;$("topic").value=lesson.topic;$("objective").value=lesson.learning_objective;$("lessonGoal").value=lesson.lesson_goal;$("taskInstruction").value=`ҚМЖ-дағы тапсырмаларды интерактивті форматқа айналдыр. Әр тапсырмаға correct_answer, descriptor, max_score міндетті.\n${kmjRowsToTaskInstruction()}`;openZerek("tasks");$("publishInfo").textContent="✅ ҚМЖ мәліметтері HTML тапсырма бөліміне берілді. Енді «HTML тапсырманы дайындау» басыңыз."}
-if($("kmjToHtml"))$("kmjToHtml").onclick=sendKmjToHtml;
+if($("kmjToHtml")) $("kmjToHtml").onclick=()=>{let s=syncKmjTasksToHtml();if(!s.ok)return alert("ҚМЖ-дан тапсырма мәтіні анықталмады.");document.querySelector('#tabs button[data-p="tasks"]')?.click();};
 if($("kmjToBoard"))$("kmjToBoard").onclick=()=>{sendKmjToHtml();setTimeout(()=>$("generateTasks")?.click(),150)};
 function boardInput(t){if(Array.isArray(t.options)&&t.options.length)return `<select data-board="${esc(t.id)}"><option value="">Жауапты таңдаңыз</option>${t.options.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("")}</select>`;return `<input data-board="${esc(t.id)}" placeholder="Жауапты енгізіңіз">`}
 function buildInteractiveBoard(){if(!generatedTasks.length)return alert("Алдымен HTML тапсырманы дайындаңыз.");$("interactiveBoard").innerHTML=`<h2>${esc(lesson.topic||"Интерактивті тапсырма")}</h2><p>🎯 ${esc(lesson.learning_objective||"")}</p>`+generatedTasks.map((t,i)=>`<div class="board-task" id="bt-${esc(t.id)}"><h3>${i+1}. ${esc(t.question||"")}</h3>${boardInput(t)}<button class="green" onclick="checkBoardTask('${esc(t.id)}')">✅ Тексеру</button><button class="gray" onclick="showBoardAnswer('${esc(t.id)}')">👁 Жауабын көрсету</button><div id="bf-${esc(t.id)}"></div></div>`).join("");typesetMath($("interactiveBoard"))}
@@ -664,6 +666,62 @@ if($("reflectionScreen"))$("reflectionScreen").onclick=()=>{$("reflectionBoard")
 if($("reflectionReset"))$("reflectionReset").onclick=()=>{reflectionAnswers={};buildReflectionBoard();$("reflectionSummary").textContent="Жауап жоқ."};
 
 if($("openReflectionFromKmj"))$("openReflectionFromKmj").onclick=()=>{detectReflectionFromKmj();document.querySelector('#tabs button[data-p="reflection"]')?.click();buildReflectionBoard()};
+
+function normalizeKmjTask(t,i,source="ҚМЖ"){
+ const q=(t.question||t.task_text||t.task||t.text||t.student_action||t.teacher_action||"").trim();
+ if(!q)return null;
+ return {
+   id:t.id||i+1,
+   type:t.type||"short",
+   question:q,
+   options:Array.isArray(t.options)?t.options:[],
+   correct_answer:t.correct_answer||t.answer||"",
+   descriptor:t.descriptor||t.assessment||"",
+   max_score:Number(t.max_score||t.points||1),
+   work_mode:t.work_mode||t.work_type||"individual",
+   group_name:t.group_name||"",
+   external_url:t.external_url||"",
+   source
+ };
+}
+function extractTasksFromAnyKmj(k){
+ let out=[],seen=new Set();
+ const add=(t,source)=>{let n=normalizeKmjTask(t,out.length,source);if(!n)return;let key=n.question.toLowerCase().replace(/\s+/g," ").slice(0,220);if(seen.has(key))return;seen.add(key);out.push(n)};
+ // 1. Explicit task arrays from AI / imported KMJ.
+ ["tasks","assignments","exercises"].forEach(key=>{if(Array.isArray(k?.[key]))k[key].forEach(t=>add(t,"ҚМЖ "+key))});
+ // 2. Teacher-created constructor tasks.
+ if(Array.isArray(window.kmjManualTasks))window.kmjManualTasks.forEach(t=>add(t,"Мұғалім конструкторы"));
+ // 3. Lesson rows: student action is strongest task signal.
+ if(Array.isArray(k?.rows))k.rows.forEach((r,ri)=>{
+   let s=(r.student_action||"").trim(),ta=(r.teacher_action||"").trim();
+   if(s && s.length>12)add({question:s,descriptor:r.assessment||"",work_type:/топ/i.test(s+ta)?"group":/жұп/i.test(s+ta)?"pair":"individual",points:1},`${r.stage||"ҚМЖ кезеңі"}`);
+   // Teacher action only when it clearly contains an assignment instruction.
+   if(ta && /(тапсыр|орында|есеп|сұрақ|талда|салыстыр|анықта|құрастыр|жаз|шығар)/i.test(ta))
+      add({question:ta,descriptor:r.assessment||"",work_type:/топ/i.test(ta)?"group":/жұп/i.test(ta)?"pair":"individual",points:1},`${r.stage||"ҚМЖ кезеңі"}`);
+ });
+ // 4. Parsed/imported AI structures.
+ if(Array.isArray(k?.lesson_tasks))k.lesson_tasks.forEach(t=>add(t,"AI талдау"));
+ if(Array.isArray(k?.activities))k.activities.forEach(t=>add(t,"ҚМЖ әрекеті"));
+ return out;
+}
+function syncKmjTasksToHtml(){
+ const k=(typeof currentKmj130!=="undefined"&&currentKmj130)||window.lastKmjAnalysis||window.kmjAnalysis||lesson||{};
+ let found=extractTasksFromAnyKmj(k);
+ if(!found.length && Array.isArray(generatedTasks) && generatedTasks.length)found=generatedTasks.map((t,i)=>normalizeKmjTask(t,i,"Алдыңғы HTML")).filter(Boolean);
+ if(!found.length){
+   const fallback=[k.lesson_goal,k.learning_objective,k.topic].filter(Boolean).join(" — ");
+   if(fallback)found=[normalizeKmjTask({question:`${k.topic||"Сабақ тақырыбы"} бойынша оқу мақсатына сәйкес тапсырманы орындаңыз. ${k.learning_objective||k.lesson_goal||""}`,descriptor:k.learning_objective||k.lesson_goal||"",max_score:1},0,"ҚМЖ мақсаты")];
+ }
+ if(!found.length)return {ok:false,tasks:[]};
+ generatedTasks=found;
+ // Fill lesson metadata for HTML module.
+ if(k.subject)lesson.subject=k.subject;if(k.class_name)lesson.class_name=k.class_name;if(k.topic)lesson.topic=k.topic;
+ if(k.learning_objective)lesson.learning_objective=k.learning_objective;if(k.lesson_goal)lesson.lesson_goal=k.lesson_goal;
+ renderTaskPreview?.();renderGroups?.();
+ return {ok:true,tasks:found};
+}
+
+if($("forceKmjTaskSync"))$("forceKmjTaskSync").onclick=()=>{let s=syncKmjTasksToHtml();$("kmjTaskSyncStatus").innerHTML=s.ok?`✅ ${s.tasks.length} тапсырма анықталды және HTML бөліміне берілді.`:"❌ Тапсырма анықталмады. ҚМЖ конструкторына тапсырма қосыңыз.";};
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
 async function checkAuth(){try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}
