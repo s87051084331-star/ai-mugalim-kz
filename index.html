@@ -85,6 +85,8 @@ body.student-public-mode .panel.on{display:block!important;width:min(1100px,100%
 
 .work-filter{display:flex;gap:8px;flex-wrap:wrap}.work-mode-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}.work-mode-head b{flex:1}.work-mode-head select{width:190px;min-width:190px}.work-mode-task{margin-top:10px}
 @media(max-width:700px){.work-mode-head{display:block}.work-mode-head select{width:100%;margin-top:8px}}
+
+.format-mix-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:12px}.format-mix-grid label{background:#f8fafc;border:1px solid #dbe3ef;border-radius:12px;padding:10px}.kmj-format-card{border:1px solid #bfdbfe}
 </style><script>
 window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};
 </script>
@@ -221,6 +223,49 @@ html.zerek-student-public body .student-public-allowed{visibility:visible}
 <label>Оқу мақсаты</label><textarea id="bObjective" rows="2"></textarea>
 <label>Сабақ мақсаты</label><textarea id="bGoal" rows="2"></textarea>
 <div class="grid3"><div><label>Ұзақтығы (мин)</label><input id="bDuration" type="number" value="45"></div><div><label>Құндылық</label><input id="bValue" placeholder="Мұғалім өзі енгізеді"></div><div><label>Аптаның дәйексөзі</label><input id="bQuote" placeholder="Мұғалім өзі енгізеді"></div></div>
+
+<div class="card kmj-format-card"><h3>🎨 Сабақ / ҚМЖ форматы</h3>
+<p class="muted">Бір негізгі форматты таңдаңыз. Қажет болса 2–3 қосымша форматты біріктіруге болады. ҚМЖ-ның негізгі 5 бағанды кестесі өзгермейді, мазмұны таңдалған форматқа бейімделеді.</p>
+<div class="grid3">
+<div><label>Негізгі формат</label><select id="kmjMainFormat">
+<option value="standard">📘 Стандартты ҚМЖ</option>
+<option value="bloom">🌱 Блум таксономиясы</option>
+<option value="national">🌸 Ұлттық формат</option>
+<option value="national_modern">🌺 Ұлттық + заманауи</option>
+<option value="integrated">🔗 Кіріктірілген сабақ</option>
+<option value="stem">🔬 STEM / STEAM</option>
+<option value="inquiry">🧩 Зерттеушілік сабақ</option>
+<option value="problem">🎯 Проблемалық оқыту</option>
+<option value="project">📁 Жобалық сабақ</option>
+<option value="game">🎮 Ойын сабағы</option>
+<option value="critical">🧠 Сын тұрғысынан ойлау</option>
+<option value="collab">👥 Ынтымақтастық сабақ</option>
+<option value="differentiated">🔄 Сараланған сабақ</option>
+<option value="inclusive">♿ Инклюзивті сабақ</option>
+<option value="functional">🌍 Функционалдық сауаттылық</option>
+<option value="olympiad">🏆 Олимпиадалық бағыт</option>
+<option value="digital">🤖 AI / цифрлық сабақ</option>
+<option value="custom">✨ Авторлық формат</option>
+</select></div>
+<div><label>Сабақ бағыты</label><select id="kmjTempo"><option value="balanced">Теңгерімді</option><option value="creative">Шығармашылық</option><option value="research">Зерттеушілік</option><option value="practice">Практикалық</option><option value="assessment">Бағалауға бағытталған</option></select></div>
+<div><label>Қосымша форматтар</label><button type="button" class="blue" id="toggleFormatMix">➕ Форматтарды біріктіру</button></div>
+</div>
+<div id="formatMixBox" style="display:none" class="format-mix-grid">
+<label><input type="checkbox" value="bloom"> 🌱 Блум</label>
+<label><input type="checkbox" value="national"> 🌸 Ұлттық</label>
+<label><input type="checkbox" value="stem"> 🔬 STEM</label>
+<label><input type="checkbox" value="inquiry"> 🧩 Зерттеу</label>
+<label><input type="checkbox" value="critical"> 🧠 Сын тұрғысынан ойлау</label>
+<label><input type="checkbox" value="differentiated"> 🔄 Саралау</label>
+<label><input type="checkbox" value="functional"> 🌍 Функционалдық сауаттылық</label>
+<label><input type="checkbox" value="digital"> 🤖 Цифрлық</label>
+</div>
+<div id="integratedFields" style="display:none;margin-top:12px">
+<h4>🔗 Кіріктірілетін пәндер</h4><div class="grid3"><input id="integratedSubject2" placeholder="2-пән: Информатика"><input id="integratedSubject3" placeholder="3-пән: Физика"><input id="integratedTheme" placeholder="Ортақ тақырып"></div>
+</div>
+<div id="customFormatFields" style="display:none;margin-top:12px"><label>Авторлық формат нұсқауы</label><textarea id="customFormatInstruction" rows="2" placeholder="Сабақ құрылымы, әдістер, ерекше талаптар..."></textarea></div>
+<div id="formatDescription" class="notice" style="margin-top:10px"></div>
+</div>
 <label>Қосымша нұсқау</label><textarea id="bInstruction" rows="3" placeholder="Мысалы: 4 топтық тапсырма, қалыптастырушы бағалау, рефлексия қос."></textarea>
 <div class="card" style="margin-top:14px"><h3>➕ ҚМЖ тапсырмалар конструкторы</h3>
 <div class="grid3"><div><label>Сабақ кезеңі</label><select id="ctStage"><option>Сабақтың басы</option><option>Сабақтың ортасы</option><option>Сабақтың соңы</option></select></div>
@@ -650,7 +695,7 @@ if($("boardReset"))$("boardReset").onclick=buildInteractiveBoard;
 
 async function loadResources(){try{let r=await fetch("/api/resources"),d=await r.json();if(!r.ok)return;myResources=d.items||[];$("resourceLibrary").innerHTML=myResources.map(x=>`<div class="card"><b>${esc(x.name)}</b> • ${esc(x.resource_type)}<br>${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.url)}</a>`:""}<br><span class="muted">${esc(x.note||"")}</span></div>`).join("")||"Ресурс жоқ."}catch(e){}}
 if($("addResource"))$("addResource").onclick=async()=>{let r=await fetch("/api/resources",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:$("resName").value,resource_type:$("resType").value,url:$("resUrl").value,note:$("resNote").value})}),d=await r.json();if(r.ok){$("resName").value="";$("resUrl").value="";$("resNote").value="";loadResources()}else alert(d.detail||"Қате")};
-if($("generate130"))$("generate130").onclick=async()=>{$("builderStatus").textContent="🤖 ҚМЖ жасалып жатыр...";try{let r=await fetch("/api/kmj/generate130",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subject:$("bSubject").value,class_name:$("bClass").value,section:$("bSection").value,topic:$("bTopic").value,learning_objective:$("bObjective").value,lesson_goal:$("bGoal").value,present:$("bPresent").value,absent:$("bAbsent").value,duration:Number($("bDuration").value||45),value:$("bValue").value,weekly_quote:$("bQuote").value,resources:myResources,extra_instruction:$("bInstruction").value,provider:$("aiProvider").value})}),d=await r.json();if(!r.ok)throw Error(aiErrorText(d.detail));currentKmj130=d.data;renderKmj130();$("builderStatus").innerHTML=`✅ ҚМЖ дайын. AI: <b>${esc(d.mode)}</b> • 🧩 HTML тапсырмаға немесе 🖥 тақтаға бірден жіберуге болады.`}catch(e){$("builderStatus").textContent="❌ "+e.message}};
+if($("generate130"))$("generate130").onclick=async()=>{$("builderStatus").textContent="🤖 ҚМЖ жасалып жатыр...";try{let r=await fetch("/api/kmj/generate130",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subject:$("bSubject").value,class_name:$("bClass").value,section:$("bSection").value,topic:$("bTopic").value,learning_objective:$("bObjective").value,lesson_goal:$("bGoal").value,present:$("bPresent").value,absent:$("bAbsent").value,duration:Number($("bDuration").value||45),value:$("bValue").value,weekly_quote:$("bQuote").value,resources:myResources,extra_instruction:formatInstructionText()+"\nҚосымша мұғалім нұсқауы: "+$("bInstruction").value,provider:$("aiProvider").value})}),d=await r.json();if(!r.ok)throw Error(aiErrorText(d.detail));currentKmj130=d.data;currentKmj130.lesson_format=selectedFormatConfig();renderKmj130();$("builderStatus").innerHTML=`✅ ҚМЖ дайын. AI: <b>${esc(d.mode)}</b> • 🧩 HTML тапсырмаға немесе 🖥 тақтаға бірден жіберуге болады.`}catch(e){$("builderStatus").textContent="❌ "+e.message}};
 if($("saveKmjArchive"))$("saveKmjArchive").onclick=async()=>{if(!currentKmj130)return alert("Алдымен ҚМЖ жасаңыз.");let r=await fetch("/api/archive/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:currentKmj130.topic||"ҚМЖ",subject:currentKmj130.subject||"",class_name:currentKmj130.class_name||"",topic:currentKmj130.topic||"",learning_objective:currentKmj130.learning_objective||"",kmj:currentKmj130})}),d=await r.json();alert(r.ok?"Архивке сақталды.":d.detail||"Қате");if(r.ok)loadHtmlArchiveOptions()};
 async function loadArchive(){let r=await fetch("/api/archive"),d=await r.json();if(!r.ok)return;$("archiveList").innerHTML=(d.items||[]).map(x=>`<div class="card"><b>${esc(x.title)}</b><br>${esc(x.subject||"")} • ${esc(x.class_name||"")}<br><span class="muted">${esc(x.learning_objective||"")}</span><br><button class="green" onclick="openArchive(${x.id})">Ашу — тегін</button> <button class="red" onclick="deleteArchive(${x.id})">Өшіру</button></div>`).join("")||"Архив бос."}
 window.openArchive=async id=>{let r=await fetch("/api/archive/"+id),d=await r.json();if(r.ok){currentKmj130=d.item.kmj_json;renderKmj130();document.querySelector('#tabs button[data-p="kmjbuilder"]')?.click()}};
@@ -918,6 +963,49 @@ function tasksForPublishing(){
    return x;
  });
 }
+
+const KMJ_FORMATS={
+ standard:{name:"Стандартты ҚМЖ",rule:"Сабақты мақсатқа сай дәстүрлі және заманауи әдістермен теңгерімді құр."},
+ bloom:{name:"Блум таксономиясы",rule:"Тапсырмаларды Блум деңгейлерімен бірізді құр: Білу, Түсіну, Қолдану, Талдау, Бағалау, Жасау. Әр деңгейдің әрекетін нақты көрсет."},
+ national:{name:"Ұлттық формат",rule:"Қазақтың ұлттық құндылықтарын мазмұнмен табиғи байланыстыр. Әдіс атауларын қазақша бер. Қоржын, Бәйге, Асық, Шаңырақ, Домбыра, Теңге алу сияқты атауларды тек педагогикалық әрекеті түсінікті болғанда қолдан. Жасанды фольклор ойлап шығарма."},
+ national_modern:{name:"Ұлттық + заманауи",rule:"Ұлттық құндылықтар мен қазақша әдіс атауларын QR, HTML, интерактивті тақта, AI сияқты заманауи цифрлық әрекеттермен үйлестір."},
+ integrated:{name:"Кіріктірілген сабақ",rule:"2–3 пәнді жай қатар атамай, ортақ оқу әрекеті мен біріккен тапсырмалар арқылы кіріктір. Әр тапсырмада пәндер арасындағы байланыс көрінсін."},
+ stem:{name:"STEM / STEAM",rule:"Ғылым, технология, инженерия, математика және қажет болса өнерді практикалық проблема/өнім арқылы байланыстыр."},
+ inquiry:{name:"Зерттеушілік сабақ",rule:"Проблема → сұрақ → болжам → зерттеу/дерек → дәлел → қорытынды логикасын қолдан."},
+ problem:{name:"Проблемалық оқыту",rule:"Сабақ басында шешуді қажет ететін нақты проблемалық жағдаят беріп, оқушыны шешімге кезең-кезеңмен жеткіз."},
+ project:{name:"Жобалық сабақ",rule:"Мақсат → жоспар → рөлдер → өнім → таныстыру/қорғау → бағалау құрылымын қолдан."},
+ game:{name:"Ойын сабағы",rule:"Миссия, кезең, ұпай, таңдау және кері байланыс элементтерін оқу мақсатына қызмет ететіндей қолдан."},
+ critical:{name:"Сын тұрғысынан ойлау",rule:"Қызығушылықты ояту → мағынаны тану → ой толғаныс логикасын және дәлелдеу/салыстыру әрекеттерін қолдан."},
+ collab:{name:"Ынтымақтастық сабақ",rule:"Жұптық және топтық өзара әрекетті, рөлдерді және ортақ нәтижені нақты жоспарла."},
+ differentiated:{name:"Сараланған сабақ",rule:"Қолдау қажет, негізгі және күрделі деңгейлерге сай тапсырмалар мен қолдау тәсілдерін бер."},
+ inclusive:{name:"Инклюзивті сабақ",rule:"Нұсқауларды қолжетімді етіп, тапсырманы орындаудың балама жолдарын, визуалды/қадамдық қолдауды және икемді бағалауды қарастыр."},
+ functional:{name:"Функционалдық сауаттылық",rule:"Өмірлік жағдаят, дерек, кесте/мәтін/сандық ақпарат және шешім қабылдауға бағытталған практикалық тапсырмалар қолдан."},
+ olympiad:{name:"Олимпиадалық бағыт",rule:"Стандарттан жоғары логикалық, дәлелдеу және бірнеше тәсілмен шешуге болатын күрделі тапсырмалар енгіз."},
+ digital:{name:"AI / цифрлық сабақ",rule:"HTML, QR, интерактивті тақта, цифрлық бағалау және орынды AI қолдануды сабақ кезеңдеріне енгіз."},
+ custom:{name:"Авторлық формат",rule:"Мұғалімнің авторлық нұсқауын басым талап ретінде орында."}
+};
+function selectedFormatConfig(){
+ let main=$("kmjMainFormat")?.value||"standard";
+ let extras=[...document.querySelectorAll("#formatMixBox input:checked")].map(x=>x.value).filter(x=>x!==main).slice(0,3);
+ return {main,extras,tempo:$("kmjTempo")?.value||"balanced",subject2:$("integratedSubject2")?.value||"",subject3:$("integratedSubject3")?.value||"",theme:$("integratedTheme")?.value||"",custom:$("customFormatInstruction")?.value||""};
+}
+function formatInstructionText(){
+ let c=selectedFormatConfig(),all=[c.main,...c.extras],rules=all.map(x=>KMJ_FORMATS[x]?.rule).filter(Boolean);
+ let text=`Негізгі сабақ форматы: ${KMJ_FORMATS[c.main]?.name||c.main}. ${rules.join(" ")}`;
+ if(c.main==="integrated"||c.extras.includes("integrated"))text+=` Кіріктірілетін пәндер: ${c.subject2||"көрсетілмеген"}; ${c.subject3||"қосылмаған"}. Ортақ тақырып: ${c.theme||"негізгі сабақ тақырыбымен байланыстыр"}.`;
+ if(c.main==="custom")text+=` Авторлық нұсқау: ${c.custom}`;
+ text+=` Сабақ бағыты: ${c.tempo}. ҚМЖ-ның негізгі 5 бағанды кестесін өзгертпе.`;
+ return text;
+}
+function updateFormatUI(){
+ let m=$("kmjMainFormat")?.value||"standard";
+ if($("integratedFields"))$("integratedFields").style.display=m==="integrated"?"block":"none";
+ if($("customFormatFields"))$("customFormatFields").style.display=m==="custom"?"block":"none";
+ if($("formatDescription"))$("formatDescription").innerHTML=`Таңдалды: <b>${KMJ_FORMATS[m]?.name}</b><br>${KMJ_FORMATS[m]?.rule||""}`;
+}
+if($("kmjMainFormat"))$("kmjMainFormat").onchange=updateFormatUI;
+if($("toggleFormatMix"))$("toggleFormatMix").onclick=()=>{$("formatMixBox").style.display=$("formatMixBox").style.display==="none"?"grid":"none"};
+setTimeout(updateFormatUI,0);
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
 async function checkAuth(){if(enterStudentPublicMode())return;try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadHtmlArchiveOptions();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}
