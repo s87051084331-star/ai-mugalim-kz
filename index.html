@@ -82,6 +82,9 @@ body.student-public-mode .ustaz-content{margin:0!important;width:100%!important;
 body.student-public-mode #tabs{display:none!important}
 body.student-public-mode .panel:not(.on){display:none!important}
 body.student-public-mode .panel.on{display:block!important;width:min(1100px,100%)!important;margin:0 auto!important}
+
+.work-filter{display:flex;gap:8px;flex-wrap:wrap}.work-mode-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}.work-mode-head b{flex:1}.work-mode-head select{width:190px;min-width:190px}.work-mode-task{margin-top:10px}
+@media(max-width:700px){.work-mode-head{display:block}.work-mode-head select{width:100%;margin-top:8px}}
 </style><script>
 window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};
 </script>
@@ -317,6 +320,20 @@ html.zerek-student-public body .student-public-allowed{visibility:visible}
 <div id="htmlTaskSourceBadge" class="notice">Дереккөз: ағымдағы ҚМЖ / AI</div><div class="notice" id="kmjTaskSyncStatus">ҚМЖ-дан HTML жасау кезінде тапсырмалар барлық бөлімдерден ізделеді: тапсырмалар, оқушы әрекеті, педагог әрекеті және мұғалім конструкторы.</div>
 <button class="blue" id="forceKmjTaskSync">🔎 ҚМЖ тапсырмаларын қайта анықтау</button>
 <div class="card"><h2>Алдын ала қарау</h2><div id="taskPreview">Тапсырма жасалмады.</div></div>
+
+<div class="card" id="workModeManager">
+<h2>👥 Тапсырмаларды жұмыс түріне бөлу</h2>
+<p class="muted">Әр тапсырманың жұмыс түрін жеке таңдаңыз. «Топ саны» тек топтық тапсырмаларға қолданылады.</p>
+<div class="work-filter">
+<button class="blue" onclick="setWorkFilter('all')">Барлығы</button>
+<button class="gray" onclick="setWorkFilter('individual')">👤 Жеке</button>
+<button class="gray" onclick="setWorkFilter('pair')">👥 Жұптық</button>
+<button class="gray" onclick="setWorkFilter('group')">👨‍👩‍👧‍👦 Топтық</button>
+<button class="gray" onclick="setWorkFilter('class')">🏫 Сыныптық</button>
+</div>
+<div id="workModeSummary" class="notice" style="margin-top:8px">Тапсырмалар анықталғаннан кейін бөлінеді.</div>
+<div id="workModeTaskList"></div>
+</div>
 <div class="card"><h2>🖥 Интерактивті тақта режимі</h2><p class="muted">ҚМЖ/HTML тапсырмасын тақтада орындаңыз. «Тексеру» дұрыс/бұрысын, дұрыс жауапты және әр тапсырманың талдауын көрсетеді.</p><button class="green" id="buildBoard">Тақта тапсырмасын ашу</button> <button class="blue" id="boardFullscreen">Толық экран</button> <button class="gray" id="boardReset">Қайта бастау</button><div id="interactiveBoard" class="interactive-board"><div class="muted">Алдымен HTML тапсырманы дайындаңыз немесе ҚМЖ-дан жіберіңіз.</div></div></div>
 </section>
 
@@ -774,7 +791,7 @@ function syncKmjTasksToHtml(){
  // Fill lesson metadata for HTML module.
  if(k.subject)lesson.subject=k.subject;if(k.class_name)lesson.class_name=k.class_name;if(k.topic)lesson.topic=k.topic;
  if(k.learning_objective)lesson.learning_objective=k.learning_objective;if(k.lesson_goal)lesson.lesson_goal=k.lesson_goal;
- renderTaskPreview?.();renderGroups?.();
+ normalizeTaskWorkModes();renderTaskPreview?.();renderGroups?.();setTimeout(renderWorkModePreview,0);
  return {ok:true,tasks:found};
 }
 
@@ -853,6 +870,53 @@ function studentPublicUrl(code){
  u.searchParams.set("mode","student");
  u.searchParams.set("lesson",code);
  return u.toString();
+}
+
+const WORK_MODE_LABELS={individual:"👤 Жеке",pair:"👥 Жұптық",group:"👨‍👩‍👧‍👦 Топтық",class:"🏫 Сыныптық"};
+let taskWorkFilter="all";
+function inferWorkMode(t){
+ let s=((t.work_mode||t.work_type||"")+" "+(t.question||t.task_text||"")+" "+(t.source||"")).toLowerCase();
+ if(t.work_mode&&["individual","pair","group","class"].includes(t.work_mode))return t.work_mode;
+ if(/топтық|топпен|топқа|group/.test(s))return "group";
+ if(/жұптық|жұппен|pair/.test(s))return "pair";
+ if(/сыныптық|бүкіл сынып|class/.test(s))return "class";
+ return "individual";
+}
+function normalizeTaskWorkModes(){
+ if(!Array.isArray(generatedTasks))return;
+ generatedTasks.forEach(t=>t.work_mode=inferWorkMode(t));
+}
+function setTaskWorkMode(i,mode){
+ if(!generatedTasks?.[i])return;
+ generatedTasks[i].work_mode=mode;
+ renderWorkModePreview();
+ renderTaskPreview?.();
+}
+function setWorkFilter(mode){taskWorkFilter=mode;renderWorkModePreview()}
+function renderWorkModePreview(){
+ normalizeTaskWorkModes();
+ const box=$("workModeTaskList");if(!box)return;
+ const visible=(generatedTasks||[]).map((t,i)=>({t,i})).filter(x=>taskWorkFilter==="all"||x.t.work_mode===taskWorkFilter);
+ box.innerHTML=visible.map(({t,i})=>`<div class="card work-mode-task"><div class="work-mode-head"><b>${i+1}. ${esc(t.question||t.task_text||"Тапсырма")}</b><select onchange="setTaskWorkMode(${i},this.value)"><option value="individual" ${t.work_mode==="individual"?"selected":""}>👤 Жеке</option><option value="pair" ${t.work_mode==="pair"?"selected":""}>👥 Жұптық</option><option value="group" ${t.work_mode==="group"?"selected":""}>👨‍👩‍👧‍👦 Топтық</option><option value="class" ${t.work_mode==="class"?"selected":""}>🏫 Сыныптық</option></select></div><div class="muted">${esc(t.descriptor||"")}</div>${t.work_mode==="group"?`<div class="notice">Топ саны: ${Number($("groupCount")?.value||4)}. Топ атаулары: ${esc($("groupNames")?.value||"1-топ, 2-топ, 3-топ, 4-топ")}</div>`:""}</div>`).join("")||"<div class='notice'>Бұл сүзгіде тапсырма жоқ.</div>";
+ const counts={individual:0,pair:0,group:0,class:0};(generatedTasks||[]).forEach(t=>counts[t.work_mode]=(counts[t.work_mode]||0)+1);
+ if($("workModeSummary"))$("workModeSummary").innerHTML=`👤 ${counts.individual} • 👥 ${counts.pair} • 👨‍👩‍👧‍👦 ${counts.group} • 🏫 ${counts.class}`;
+}
+window.setTaskWorkMode=setTaskWorkMode;window.setWorkFilter=setWorkFilter;
+
+function tasksForPublishing(){
+ normalizeTaskWorkModes();
+ const gc=Math.max(1,Number($("groupCount")?.value||4));
+ const names=($("groupNames")?.value||"").split(",").map(x=>x.trim()).filter(Boolean);
+ return (generatedTasks||[]).map((t,i)=>{
+   let x={...t};
+   if(x.work_mode==="group"){
+     x.group_index=i%gc;
+     x.group_name=names[x.group_index]||`${x.group_index+1}-топ`;
+   }else{
+     x.group_index=null;x.group_name="";
+   }
+   return x;
+ });
 }
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
