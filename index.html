@@ -34,7 +34,15 @@ body{background:#f5f7fb}.wrap{max-width:none;margin-left:300px;padding:18px 28px
 .ustaz-side-brand{display:flex;align-items:center;gap:12px;padding:4px 10px 18px;margin-bottom:14px;border-bottom:1px solid #edf0f5}.ustaz-side-brand img{width:58px;height:58px;object-fit:cover;border-radius:16px;box-shadow:0 6px 16px #0001}.ustaz-side-brand strong{display:block;font-size:22px;color:#172033}.ustaz-side-brand span{display:block;color:#748097;font-size:14px;margin-top:3px}.yai-logo{overflow:hidden;background:#fff!important}.yai-logo img{width:100%;height:100%;object-fit:cover;display:block}.tabs{overflow-x:hidden!important}.tabs button{width:100%;text-align:left}.tabs .ustaz-side-brand{width:100%;box-sizing:border-box}@media(max-width:760px){.ustaz-side-brand{display:none}.tabs{overflow-x:auto!important}.tabs button{width:auto}}
 
 .interactive-board{margin-top:14px;background:#f8fbff;border:1px solid #dbe7f5;border-radius:20px;padding:20px}.board-task{background:white;border:2px solid #dbe3ef;border-radius:18px;padding:18px;margin:14px 0}.board-task.correct{border-color:#16a34a;background:#f0fdf4}.board-task.wrong{border-color:#dc2626;background:#fef2f2}.board-answer{margin-top:10px;padding:10px;border-radius:10px;background:#eef2ff}.board-analysis{margin-top:8px;padding:10px;border-left:4px solid #2563eb;background:#eff6ff}.interactive-board:fullscreen{overflow:auto;background:#eef4ff;padding:3vw;font-size:1.35rem}.interactive-board:fullscreen .board-task{padding:24px}.slide-theme-academic .slide-card{background:linear-gradient(135deg,#f8fbff,#e8f1ff)}.slide-theme-green .slide-card{background:linear-gradient(135deg,#f0fdf4,#dcfce7)}.slide-theme-purple .slide-card{background:linear-gradient(135deg,#faf5ff,#ede9fe)}.slide-theme-warm .slide-card{background:linear-gradient(135deg,#fff7ed,#fef3c7)}.slide-theme-dark .slide-card{background:linear-gradient(135deg,#111827,#1e293b);color:#f8fafc}.slide-theme-dark .slide-card h2,.slide-theme-dark .slide-card h1{color:#93c5fd}.slide-theme-math .slide-card{background-color:#f8fafc;background-image:linear-gradient(#dbeafe 1px,transparent 1px),linear-gradient(90deg,#dbeafe 1px,transparent 1px);background-size:28px 28px}.slide-theme-kids .slide-card{background:linear-gradient(135deg,#fef9c3,#dbeafe,#fce7f3)}.slide-large .slide-card{font-size:1.25rem}
-.author-phone{color:inherit;font-weight:800;text-decoration:none}.author-phone:hover{text-decoration:underline}.zerek-author{text-align:center;padding:14px;color:#64748b;font-size:14px}</style><script>
+.author-phone{color:inherit;font-weight:800;text-decoration:none}.author-phone:hover{text-decoration:underline}.zerek-author{text-align:center;padding:14px;color:#64748b;font-size:14px}.side-author{margin-top:8px;font-size:12px;line-height:1.5}.side-author a{color:#5b5ce6;text-decoration:none;font-weight:800}@media(max-width:760px){footer .author-phone{display:inline-block;margin-top:6px}}
+.reflection-board{background:#fff;border:1px solid #dbe3ef;border-radius:18px;padding:22px;min-height:280px}
+.reflection-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:16px}
+.reflection-choice{border:2px solid #cbd5e1;border-radius:18px;padding:24px;text-align:center;font-size:1.15rem;background:#fff;cursor:pointer}
+.reflection-choice.selected{outline:4px solid #93c5fd}
+.reflection-field{margin:12px 0}.reflection-field textarea{min-height:80px}
+.reflection-board:fullscreen{width:100vw;height:100vh;padding:5vw;font-size:1.5rem;overflow:auto;background:white}
+.reflection-board:fullscreen .reflection-choice{font-size:1.4rem;padding:34px}
+</style><script>
 window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};
 </script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
@@ -59,7 +67,7 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 <header><div class="brand-head"><img src="/zerek-logo.png" class="brand-logo" alt="ZEREK Education"><div><h1>Ұстаз AI <span title="V5.2 — жаңа чат интерфейсі" style="font-size:12px;background:#2563eb;padding:5px 8px;border-radius:999px;vertical-align:middle">V5.2</span></h1><div><b>ZEREK Education</b> • Қазақша ЖИ-көмекші</div></div></div><div><b>Жоба авторы: ҚОҚАЙ ЖІГЕР • 📞 <a href="tel:+77051094331" class="author-phone">+7 705 109 4331</a></b></div><div style="display:flex;gap:8px;align-items:center"><select id="langSelect" style="width:auto;margin:0"><option value="kk">Қазақша</option><option value="ru">Русский</option><option value="en">English</option></select><button id="installPwaBtn" class="blue" style="display:none">📲 Орнату</button><button id="logoutBtn" class="gray" style="display:none">Шығу</button></div></header>
 <div class="wrap">
 <div class="card" style="padding:14px 18px"><div class="grid"><div><label>🤖 AI провайдері</label><select id="aiProvider"><option value="auto">Автоматты</option><option value="gemini">Google Gemini</option><option value="openai">OpenAI (ChatGPT модельдері)</option></select></div><div><label>AI күйі</label><div id="aiStatus" class="notice">Тексерілуде...</div></div></div></div><div class="card"><h2>👤 Менің AI лимитім</h2><div class="grid"><div><label>AI таңдау</label><select id="myAiProvider"><option value="auto">Автоматты</option><option value="openai">OpenAI</option><option value="gemini">Gemini</option></select></div><div id="myAiUsage" class="notice">Жүктелуде...</div></div><button class="blue" id="saveMyAi">Сақтау</button></div><div id="lessonBar" class="lessonbar"><b>📚 Ағымдағы сабақ:</b> әлі басталмаған.</div>
-<div class="tabs" id="tabs"><div class="ustaz-side-brand"><img src="/zerek-logo.png" alt="Ұстаз AI"><div><strong>Ұстаз AI</strong><span>Қазақша ЖИ-көмекші</span></div></div><button data-p="dashboard" class="on">🏠 Басты панель</button><button data-p="subjects">📚 Пәндер</button><button data-p="kmjcenter">📘 ҚМЖ орталығы</button><button data-p="taskbank">🧩 Тапсырмалар банкі</button><button data-p="community">🌐 Ортақ база</button><button data-p="myclasses">👥 Менің сыныптарым</button><button data-p="kmj">📘 ҚМЖ</button><button data-p="kmjbuilder">📝 ҚМЖ құрастыру</button><button data-p="archive">📚 Менің архивім</button><button data-p="myresources">📎 Менің ресурстарым</button><button data-p="slides">📊 ҚМЖ → Слайд</button><button data-p="tasks">📝 HTML тапсырма</button><button data-p="images">🖼 ҚМЖ суреттері</button><button data-p="grouping">🎲 Топқа бөлу</button><button data-p="groups">👥 Топтық жұмыс</button><button data-p="screen">🖥 Экран режимі</button><button data-p="resources">🔗 Сыртқы ресурстар</button><button data-p="class">👥 Сынып</button><button data-p="qr">📱 QR қатысу</button><button data-p="monitor">📹 Сабақ мониторингі</button><button data-p="oral">🎙️ Ауызша жауап</button><button data-p="analysis">🤖 Жеке талдау</button><button data-p="journal">📊 Журнал</button><button data-p="packages">💳 Менің пакетім</button><button data-p="admin" id="adminTab" style="display:none">🔐 Рұқсаттар</button></div>
+<div class="tabs" id="tabs"><div class="ustaz-side-brand"><img src="/zerek-logo.png" alt="Ұстаз AI"><div><strong>Ұстаз AI</strong><span>Қазақша ЖИ-көмекші</span><div class="side-author">ҚОҚАЙ ЖІГЕР<br><a href="tel:+77051094331">📞 +7 705 109 4331</a></div></div></div><button data-p="dashboard" class="on">🏠 Басты панель</button><button data-p="subjects">📚 Пәндер</button><button data-p="kmjcenter">📘 ҚМЖ орталығы</button><button data-p="taskbank">🧩 Тапсырмалар банкі</button><button data-p="community">🌐 Ортақ база</button><button data-p="myclasses">👥 Менің сыныптарым</button><button data-p="kmj">📘 ҚМЖ</button><button data-p="kmjbuilder">📝 ҚМЖ құрастыру</button><button data-p="reflection">🔄 Рефлексия</button><button data-p="archive">📚 Менің архивім</button><button data-p="myresources">📎 Менің ресурстарым</button><button data-p="slides">📊 ҚМЖ → Слайд</button><button data-p="tasks">📝 HTML тапсырма</button><button data-p="images">🖼 ҚМЖ суреттері</button><button data-p="grouping">🎲 Топқа бөлу</button><button data-p="groups">👥 Топтық жұмыс</button><button data-p="screen">🖥 Экран режимі</button><button data-p="resources">🔗 Сыртқы ресурстар</button><button data-p="class">👥 Сынып</button><button data-p="qr">📱 QR қатысу</button><button data-p="monitor">📹 Сабақ мониторингі</button><button data-p="oral">🎙️ Ауызша жауап</button><button data-p="analysis">🤖 Жеке талдау</button><button data-p="journal">📊 Журнал</button><button data-p="packages">💳 Менің пакетім</button><button data-p="admin" id="adminTab" style="display:none">🔐 Рұқсаттар</button></div>
 
 
 <section id="dashboard" class="panel on">
@@ -171,12 +179,41 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 <div id="ctStatus" class="notice" style="margin-top:8px">Тапсырма қосылмады.</div><div id="ctList"></div>
 </div>
 <button class="green" id="generate130">🤖 ҚМЖ жасау</button> <button class="blue" id="saveKmjArchive">📚 Архивке сақтау</button>
-<button class="green" id="kmjToHtml">🧩 ҚМЖ → HTML тапсырма</button> <button class="blue" id="kmjToBoard">🖥 ҚМЖ тапсырмасын тақтаға</button> <button class="blue" id="downloadKmjDocx">📄 DOCX жүктеу</button> <button class="gray" id="printKmj">🖨 PDF / Басып шығару</button>
+<button class="green" id="kmjToHtml">🧩 ҚМЖ → HTML тапсырма</button> <button class="blue" id="kmjToBoard">🖥 ҚМЖ тапсырмасын тақтаға</button> <button class="blue" id="openReflectionFromKmj">🔄 ҚМЖ → Рефлексия</button> <button class="blue" id="downloadKmjDocx">📄 DOCX жүктеу</button> <button class="gray" id="printKmj">🖨 PDF / Басып шығару</button>
 <div id="builderStatus" class="notice" style="margin-top:10px">ҚМЖ жасалмады.</div>
 </div>
 <div class="card"><h2>ҚМЖ алдын ала қарау</h2><div id="kmj130Preview">—</div></div>
 </section>
 
+
+<section id="reflection" class="panel">
+<div class="card"><h2>🔄 ҚМЖ рефлексиясы</h2>
+<p class="muted">ҚМЖ-дағы рефлексия атауын енгізіңіз немесе ҚМЖ-дан автоматты анықтаңыз. Жүйе әдістің атауына сәйкес интерактивті HTML жасайды.</p>
+<div class="grid3">
+<div><label>Рефлексия әдісі</label><select id="reflectionMethod">
+<option value="auto">ҚМЖ бойынша автоматты</option>
+<option value="traffic">🚦 Бағдаршам</option>
+<option value="bbb">📚 БББ</option>
+<option value="five">🖐 Бес саусақ</option>
+<option value="321">3️⃣ 3-2-1</option>
+<option value="ticket">🎫 Шығу билеті</option>
+<option value="stars">⭐ Екі жұлдыз, бір тілек</option>
+<option value="mood">😊 Көңіл-күй шкаласы</option>
+<option value="custom">✍️ Еркін рефлексия</option>
+</select></div>
+<div><label>ҚМЖ-дағы атауы</label><input id="reflectionName" placeholder="Мысалы: Бағдаршам әдісі"></div>
+<div><label>Сабақ мақсаты</label><input id="reflectionGoal" placeholder="ҚМЖ-дан автоматты толтырылады"></div>
+</div>
+<label>Қосымша сұрақ/нұсқау</label><textarea id="reflectionPrompt" rows="2" placeholder="Қажет болса мұғалім өзі өзгерте алады"></textarea>
+<button class="green" id="detectReflection">🔎 ҚМЖ-дан анықтау</button>
+<button class="blue" id="buildReflection">🧩 HTML рефлексия жасау</button>
+<button class="blue" id="reflectionScreen">🖥 Тақтаға шығару</button>
+<button class="gray" id="reflectionReset">🔄 Жауаптарды тазалау</button>
+<div id="reflectionStatus" class="notice" style="margin-top:10px">Рефлексия әлі жасалмады.</div>
+</div>
+<div class="card"><h2>Интерактивті рефлексия</h2><div id="reflectionBoard" class="reflection-board">ҚМЖ-дан рефлексияны анықтаңыз.</div></div>
+<div class="card"><h2>📊 Рефлексия қорытындысы</h2><div id="reflectionSummary">Жауап жоқ.</div></div>
+</section>
 <section id="archive" class="panel"><div class="card"><h2>📚 Менің архивім</h2><p class="muted">Бұрын сақталған материалды ашу AI кредит жұмсамайды.</p><button class="blue" id="refreshArchive">Жаңарту</button><div id="archiveList"></div></div></section>
 
 <section id="myresources" class="panel"><div class="card"><h2>📎 Менің ресурстарым</h2>
@@ -281,7 +318,7 @@ window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$
 
 <div id="studentTaskScreen" style="display:none;position:fixed;inset:0;background:#f3f6fb;z-index:9999;padding:20px;overflow:auto"><div class="card" style="max-width:760px;margin:auto"><h2 id="studentTaskTitle">Тапсырма</h2><input id="studentTaskId" placeholder="ST01"><input id="studentTaskName" placeholder="Аты-жөні"><div id="studentTasks"></div><button class="green" id="submitStudentTasks">Жауаптарды жіберу</button><div id="studentTaskResult" class="notice"></div></div></div>
 <div id="joinScreen" style="display:none;position:fixed;inset:0;background:#f3f6fb;z-index:9999;padding:20px;overflow:auto"><div class="card" style="max-width:560px;margin:auto"><h2>✅ Сабаққа қатысу</h2><div id="joinLesson" class="notice"></div><input id="joinId" placeholder="ST01"><input id="joinName" placeholder="Аты-жөні"><input id="joinClass" placeholder="Сынып"><button class="green" id="joinBtn">Қатыстым</button><div id="joinStatus" class="notice"></div></div></div>
-<div id="authOverlay" style="position:fixed;inset:0;background:#eef3f9;z-index:30000;display:flex;align-items:center;justify-content:center;padding:15px"><div class="card" style="width:min(520px,100%)"><div style="text-align:center"><img src="/zerek-logo.png" style="width:90px;border-radius:18px"><h2>ZEREK Education</h2><p data-i18n="auth">AI Мұғалім көмекшісіне кіру</p></div><div id="loginBox"><label>Email</label><input id="loginEmail" type="email"><label data-i18n="password">Құпиясөз</label><input id="loginPassword" type="password"><button class="green" id="loginBtn" data-i18n="login">Кіру</button> <button class="blue" id="showRegister" data-i18n="register">Тіркелу</button></div><div id="registerBox" style="display:none"><label data-i18n="name">Аты-жөні</label><input id="regName"><label>Email</label><input id="regEmail" type="email"><label data-i18n="password">Құпиясөз</label><input id="regPassword" type="password"><button class="green" id="registerBtn" data-i18n="request">Тіркелу сұранысын жіберу</button> <button class="gray" id="showLogin">Артқа</button></div><div id="authStatus" class="notice" style="margin-top:10px">Жаңа аккаунт әкімші рұқсат бергеннен кейін ашылады.</div></div></div><nav class="mobile-nav" id="mobileNav"><button data-mobile="kmj">📘<span>ҚМЖ</span></button><button data-mobile="tasks">📝<span>Тапсырма</span></button><button data-mobile="qr">📱<span>QR</span></button><button data-mobile="grouping">👥<span>Топтар</span></button><button data-mobile="journal">📊<span>Журнал</span></button></nav><footer><b>ZEREK Education</b> • Жоба авторы: <b>ҚОҚАЙ ЖІГЕР</b></footer>
+<div id="authOverlay" style="position:fixed;inset:0;background:#eef3f9;z-index:30000;display:flex;align-items:center;justify-content:center;padding:15px"><div class="card" style="width:min(520px,100%)"><div style="text-align:center"><img src="/zerek-logo.png" style="width:90px;border-radius:18px"><h2>ZEREK Education</h2><p data-i18n="auth">AI Мұғалім көмекшісіне кіру</p></div><div id="loginBox"><label>Email</label><input id="loginEmail" type="email"><label data-i18n="password">Құпиясөз</label><input id="loginPassword" type="password"><button class="green" id="loginBtn" data-i18n="login">Кіру</button> <button class="blue" id="showRegister" data-i18n="register">Тіркелу</button></div><div id="registerBox" style="display:none"><label data-i18n="name">Аты-жөні</label><input id="regName"><label>Email</label><input id="regEmail" type="email"><label data-i18n="password">Құпиясөз</label><input id="regPassword" type="password"><button class="green" id="registerBtn" data-i18n="request">Тіркелу сұранысын жіберу</button> <button class="gray" id="showLogin">Артқа</button></div><div id="authStatus" class="notice" style="margin-top:10px">Жаңа аккаунт әкімші рұқсат бергеннен кейін ашылады.</div></div></div><nav class="mobile-nav" id="mobileNav"><button data-mobile="kmj">📘<span>ҚМЖ</span></button><button data-mobile="tasks">📝<span>Тапсырма</span></button><button data-mobile="qr">📱<span>QR</span></button><button data-mobile="grouping">👥<span>Топтар</span></button><button data-mobile="journal">📊<span>Журнал</span></button></nav><footer><b>ZEREK Education</b> • Жоба авторы: <b>ҚОҚАЙ ЖІГЕР</b> • <a href="tel:+77051094331" class="author-phone">📞 +7 705 109 4331</a></footer>
 
 <script>
 "use strict";
@@ -303,7 +340,7 @@ async function analyzeKmjText(text){
  $("kmjStatus").textContent="🤖 AI талдап жатыр. Қызмет бос емес болса, автоматты түрде қайталанады...";
  let a=await fetch("/api/kmj/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text||"",hint:$("kmjHint").value,provider:$("aiProvider").value})});
  let j=await a.json();if(!a.ok)throw Error(aiErrorText(j.detail)||"AI ҚМЖ-ны талдай алмады");
- lesson={subject:j.data?.subject||"",class_name:j.data?.class_name||"",topic:j.data?.topic||"",learning_objective:j.data?.learning_objective||"",lesson_goal:j.data?.lesson_goal||"",tasks:Array.isArray(j.data?.tasks)?j.data.tasks:[]};
+ lesson={subject:j.data?.subject||"",class_name:j.data?.class_name||"",topic:j.data?.topic||"",learning_objective:j.data?.learning_objective||"",lesson_goal:j.data?.lesson_goal||"",tasks:Array.isArray(j.data?.tasks)?j.data.tasks:[]}; currentKmj130=null;ensureCurrentKmj();
  $("subject").value=lesson.subject;$("className").value=lesson.class_name;$("topic").value=lesson.topic;$("objective").value=lesson.learning_objective;$("lessonGoal").value=lesson.lesson_goal;
  $("kmjStatus").innerHTML=`✅ ҚМЖ талданды. AI: <b>${esc(j.mode||$("aiProvider").value)}</b>${j.fallback?" • 🔁 резервтік AI қолданылды":""} • Тапсырма: <b>${lesson.tasks.length}</b>`;
  $("foundTasks").innerHTML=lesson.tasks.length?lesson.tasks.map((t,i)=>`<div class="card"><b>${i+1}. ${esc(t.title||"Тапсырма")}</b><br>${esc(t.question||"")}<br><span class="muted">Дескриптор: ${esc(t.descriptor||"")}</span></div>`).join(""):"ҚМЖ-дан тапсырма табылмады.";
@@ -513,8 +550,18 @@ function renderKmj130(){
  $("kmj130Preview").innerHTML=`<div><b>Пән:</b> ${esc(k.subject||"")} • <b>Сынып:</b> ${esc(k.class_name||"")} • <b>Бөлім:</b> ${esc(k.section||"")}<br><b>Тақырып:</b> ${esc(k.topic||"")}<br><b>Оқу мақсаты:</b> ${esc(k.learning_objective||"")}<br><b>Сабақ мақсаты:</b> ${esc(k.lesson_goal||"")}<br><b>Қатысқандар:</b> ${esc(k.present||"")} • <b>Қатыспағандар:</b> ${esc(k.absent||"")}<br><b>Құндылық:</b> ${esc(k.value||"")}<br><b>Аптаның дәйексөзі:</b> ${esc(k.weekly_quote||"")}</div><div style="overflow:auto;margin-top:12px"><table class="kmj-table"><thead><tr><th>Сабақтың кезеңі / Уақыт</th><th>Педагогтің іс-әрекеті</th><th>Оқушының іс-әрекеті</th><th>Бағалау</th><th>Ресурстар</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.stage||"")}<br>${esc(r.minutes||"")} мин</td><td contenteditable="true">${esc(r.teacher_action||"")}</td><td contenteditable="true">${esc(r.student_action||"")}</td><td contenteditable="true">${esc(r.assessment||"")}</td><td contenteditable="true">${esc(r.resources||"")}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
-function kmjRowsToTaskInstruction(){if(!currentKmj130)return "";return (currentKmj130.rows||[]).map((r,i)=>`${i+1}) ${r.stage}: ${r.student_action||r.teacher_action||''} | Бағалау: ${r.assessment||''} | Ресурс: ${r.resources||''}`).join("\n")}
-function sendKmjToHtml(){if(!currentKmj130)return alert("Алдымен ҚМЖ жасаңыз.");lesson.subject=currentKmj130.subject||"";lesson.class_name=currentKmj130.class_name||"";lesson.topic=currentKmj130.topic||"";lesson.learning_objective=currentKmj130.learning_objective||"";lesson.lesson_goal=currentKmj130.lesson_goal||"";$("subject").value=lesson.subject;$("className").value=lesson.class_name;$("topic").value=lesson.topic;$("objective").value=lesson.learning_objective;$("lessonGoal").value=lesson.lesson_goal;$("taskInstruction").value=`ҚМЖ-дағы тапсырмаларды интерактивті форматқа айналдыр. Әр тапсырмаға correct_answer, descriptor, max_score міндетті.\n${kmjRowsToTaskInstruction()}`;openZerek("tasks");$("publishInfo").textContent="✅ ҚМЖ мәліметтері HTML тапсырма бөліміне берілді. Енді «HTML тапсырманы дайындау» басыңыз."}
+function ensureCurrentKmj(){
+ if(currentKmj130)return currentKmj130;
+ if(lesson && (lesson.topic||lesson.learning_objective||Array.isArray(lesson.tasks))){
+   const tasks=Array.isArray(lesson.tasks)?lesson.tasks:[];
+   currentKmj130={subject:lesson.subject||"",class_name:lesson.class_name||"",section:"",topic:lesson.topic||"",learning_objective:lesson.learning_objective||"",lesson_goal:lesson.lesson_goal||"",present:"",absent:"",value:"",weekly_quote:"",rows:tasks.map((t,i)=>({stage:t.stage||"Сабақтың ортасы",minutes:t.minutes||5,teacher_action:t.teacher_action||("Тапсырманы ұсынады: "+(t.question||t.title||"")),student_action:t.student_action||(t.question||t.title||""),assessment:t.assessment||t.descriptor||"",resources:t.resources||t.external_url||""}))};
+   if(!currentKmj130.rows.length && lesson.topic) currentKmj130.rows=[{stage:"Сабақтың ортасы",minutes:20,teacher_action:"Тақырып бойынша тапсырмаларды ұйымдастырады.",student_action:"Берілген тапсырмаларды орындайды.",assessment:"Қалыптастырушы бағалау",resources:""}];
+   renderKmj130();return currentKmj130;
+ }
+ return null;
+}
+function kmjRowsToTaskInstruction(){ensureCurrentKmj();if(!currentKmj130)return "";return (currentKmj130.rows||[]).map((r,i)=>`${i+1}) ${r.stage}: ${r.student_action||r.teacher_action||''} | Бағалау: ${r.assessment||''} | Ресурс: ${r.resources||''}`).join("\n")}
+function sendKmjToHtml(){ensureCurrentKmj();if(!currentKmj130)return alert("ҚМЖ табылмады. Алдымен ҚМЖ файлын оқытыңыз немесе ҚМЖ құрастырыңыз.");lesson.subject=currentKmj130.subject||"";lesson.class_name=currentKmj130.class_name||"";lesson.topic=currentKmj130.topic||"";lesson.learning_objective=currentKmj130.learning_objective||"";lesson.lesson_goal=currentKmj130.lesson_goal||"";$("subject").value=lesson.subject;$("className").value=lesson.class_name;$("topic").value=lesson.topic;$("objective").value=lesson.learning_objective;$("lessonGoal").value=lesson.lesson_goal;$("taskInstruction").value=`ҚМЖ-дағы тапсырмаларды интерактивті форматқа айналдыр. Әр тапсырмаға correct_answer, descriptor, max_score міндетті.\n${kmjRowsToTaskInstruction()}`;openZerek("tasks");$("publishInfo").textContent="✅ ҚМЖ мәліметтері HTML тапсырма бөліміне берілді. Енді «HTML тапсырманы дайындау» басыңыз."}
 if($("kmjToHtml"))$("kmjToHtml").onclick=sendKmjToHtml;
 if($("kmjToBoard"))$("kmjToBoard").onclick=()=>{sendKmjToHtml();setTimeout(()=>$("generateTasks")?.click(),150)};
 function boardInput(t){if(Array.isArray(t.options)&&t.options.length)return `<select data-board="${esc(t.id)}"><option value="">Жауапты таңдаңыз</option>${t.options.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("")}</select>`;return `<input data-board="${esc(t.id)}" placeholder="Жауапты енгізіңіз">`}
@@ -558,6 +605,65 @@ function addChatBubble(text,who){let box=document.getElementById("chatMessages")
 async function sendUstazChat(){let input=document.getElementById("chatInput"),btn=document.getElementById("chatSend");if(!input||!input.value.trim())return;let q=input.value.trim();input.value="";addChatBubble(q,"user");addChatBubble("Ойланып жатырмын...","ai");let box=document.getElementById("chatMessages"),pending=box.lastElementChild;try{btn.disabled=true;let r=await fetch("/api/zerek/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:q,provider:document.getElementById("aiProvider")?.value||"auto",mode:"teacher"})}),d=await r.json();if(!r.ok)throw Error(aiErrorText(d.detail));pending.textContent=d.text+"\n\nAI: "+d.provider;typesetMath(pending)}catch(e){pending.textContent="❌ "+e.message}finally{btn.disabled=false}}
 if(document.getElementById("chatSend"))document.getElementById("chatSend").onclick=sendUstazChat;
 if(document.getElementById("chatInput"))document.getElementById("chatInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendUstazChat()}});
+
+let reflectionAnswers={};
+function inferReflectionMethod(name){
+ let s=(name||"").toLowerCase();
+ if(s.includes("бағдаршам")||s.includes("светофор"))return "traffic";
+ if(s.includes("ббб")||s.includes("білемін")||s.includes("білдім"))return "bbb";
+ if(s.includes("бес саусақ")||s.includes("5 саусақ"))return "five";
+ if(s.includes("3-2-1")||s.includes("3 2 1"))return "321";
+ if(s.includes("шығу билеті")||s.includes("exit ticket"))return "ticket";
+ if(s.includes("екі жұлдыз")||s.includes("2 жұлдыз"))return "stars";
+ if(s.includes("көңіл")||s.includes("эмоция"))return "mood";
+ return "custom";
+}
+function detectReflectionFromKmj(){
+ let k=currentKmj130||lesson||{};
+ let text="";
+ if(k.rows)text=k.rows.map(r=>[r.stage,r.teacher_action,r.student_action,r.assessment,r.resources].join(" ")).join("\n");
+ else if(k.tasks)text=k.tasks.map(t=>[t.title,t.question,t.descriptor].join(" ")).join("\n");
+ const patterns=["Бағдаршам","БББ","Бес саусақ","3-2-1","Шығу билеті","Екі жұлдыз, бір тілек","Көңіл-күй"];
+ let found=patterns.find(x=>text.toLowerCase().includes(x.toLowerCase()))||"";
+ $("reflectionName").value=found;
+ $("reflectionGoal").value=k.lesson_goal||k.learning_objective||lesson.lesson_goal||lesson.learning_objective||"";
+ $("reflectionMethod").value=found?inferReflectionMethod(found):"custom";
+ $("reflectionStatus").textContent=found?`✅ ҚМЖ-дан «${found}» анықталды.`:"ℹ️ ҚМЖ-дан нақты рефлексия атауы табылмады. Әдісті қолмен таңдаңыз.";
+}
+function refTextArea(key,label,ph=""){
+ return `<div class="reflection-field"><label>${label}</label><textarea data-ref="${key}" placeholder="${ph}"></textarea></div>`;
+}
+function buildReflectionBoard(){
+ let method=$("reflectionMethod").value,name=$("reflectionName").value.trim(),goal=$("reflectionGoal").value.trim();
+ if(method==="auto")method=inferReflectionMethod(name);
+ if(!name)name={traffic:"Бағдаршам",bbb:"БББ",five:"Бес саусақ","321":"3-2-1",ticket:"Шығу билеті",stars:"Екі жұлдыз, бір тілек",mood:"Көңіл-күй шкаласы",custom:"Рефлексия"}[method]||"Рефлексия";
+ let body="";
+ if(method==="traffic")body=`<div class="reflection-options"><button class="reflection-choice" data-choice="🔴 Түсінбедім">🔴<br>Түсінбедім</button><button class="reflection-choice" data-choice="🟡 Сұрағым бар">🟡<br>Сұрағым бар</button><button class="reflection-choice" data-choice="🟢 Толық түсіндім">🟢<br>Толық түсіндім</button></div>`;
+ else if(method==="bbb")body=refTextArea("know","Білемін")+refTextArea("learned","Білдім")+refTextArea("want","Білгім келеді");
+ else if(method==="five")body=["Бас бармақ — маңыздысы","Сұқ саусақ — үйренгенім","Ортан терек — қиын болғаны","Аты жоқ саусақ — көңіл-күйім","Шынашақ — ұсынысым"].map((x,i)=>refTextArea("f"+i,x)).join("");
+ else if(method==="321")body=refTextArea("three","3 жаңа ақпарат")+refTextArea("two","2 қызықты нәрсе")+refTextArea("one","1 сұрақ");
+ else if(method==="ticket")body=refTextArea("learned","Бүгін не үйрендің?")+refTextArea("hard","Не қиын болды?")+refTextArea("next","Келесі сабақта нені білгің келеді?");
+ else if(method==="stars")body=refTextArea("star1","⭐ 1-жұлдыз: сәтті болғаны")+refTextArea("star2","⭐ 2-жұлдыз: тағы бір сәтті тұсы")+refTextArea("wish","💫 1 тілек");
+ else if(method==="mood")body=`<div class="reflection-options">${["😞 1","😐 2","🙂 3","😊 4","🤩 5"].map(x=>`<button class="reflection-choice" data-choice="${x}">${x}</button>`).join("")}</div>`;
+ else body=refTextArea("custom",$("reflectionPrompt").value||"Сабақ бойынша ойыңды жаз");
+ $("reflectionBoard").innerHTML=`<h2>${esc(name)}</h2>${goal?`<p><b>🎯 Сабақ мақсаты:</b> ${esc(goal)}</p>`:""}${body}<button class="green" id="saveReflectionAnswer">✅ Жауапты тіркеу</button>`;
+ reflectionAnswers={};bindReflectionInputs();$("reflectionStatus").textContent="✅ Интерактивті HTML рефлексия дайын.";
+}
+function bindReflectionInputs(){
+ document.querySelectorAll("#reflectionBoard [data-choice]").forEach(b=>b.onclick=()=>{document.querySelectorAll("#reflectionBoard [data-choice]").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");reflectionAnswers.choice=b.dataset.choice});
+ document.querySelectorAll("#reflectionBoard [data-ref]").forEach(x=>x.oninput=()=>reflectionAnswers[x.dataset.ref]=x.value);
+ let s=$("saveReflectionAnswer");if(s)s.onclick=()=>renderReflectionSummary();
+}
+function renderReflectionSummary(){
+ let vals=Object.values(reflectionAnswers).filter(Boolean);
+ $("reflectionSummary").innerHTML=vals.length?`<div class="ok">✅ Жауап тіркелді</div>${Object.entries(reflectionAnswers).map(([k,v])=>`<div class="card"><b>${esc(k)}</b>: ${esc(v)}</div>`).join("")}`:"Жауап енгізілмеді.";
+}
+if($("detectReflection"))$("detectReflection").onclick=detectReflectionFromKmj;
+if($("buildReflection"))$("buildReflection").onclick=buildReflectionBoard;
+if($("reflectionScreen"))$("reflectionScreen").onclick=()=>{$("reflectionBoard")?.requestFullscreen?.().catch(()=>{})};
+if($("reflectionReset"))$("reflectionReset").onclick=()=>{reflectionAnswers={};buildReflectionBoard();$("reflectionSummary").textContent="Жауап жоқ."};
+
+if($("openReflectionFromKmj"))$("openReflectionFromKmj").onclick=()=>{detectReflectionFromKmj();document.querySelector('#tabs button[data-p="reflection"]')?.click();buildReflectionBoard()};
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
 async function checkAuth(){try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}
