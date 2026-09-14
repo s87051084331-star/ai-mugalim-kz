@@ -87,7 +87,7 @@ body.student-public-mode .panel.on{display:block!important;width:min(1100px,100%
 @media(max-width:700px){.work-mode-head{display:block}.work-mode-head select{width:100%;margin-top:8px}}
 
 .format-mix-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:12px}.format-mix-grid label{background:#f8fafc;border:1px solid #dbe3ef;border-radius:12px;padding:10px}.kmj-format-card{border:1px solid #bfdbfe}
-</style><script>
+.schedule-cell{border:1px solid #dbeafe;border-radius:10px;padding:7px;margin:4px;background:#f8fbff}.schedule-cell small{display:block;color:#64748b}.schedule-cell button{padding:5px 8px;margin:4px 3px 0 0}.primary-actions{display:flex;gap:8px;flex-wrap:wrap}</style><script>
 window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};
 </script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
@@ -125,7 +125,7 @@ html.zerek-student-public body .student-public-allowed{visibility:visible}
 <header><div class="brand-head"><img src="/zerek-logo.png" class="brand-logo" alt="ZEREK Education"><div><h1>Ұстаз AI <span title="V5.2 — жаңа чат интерфейсі" style="font-size:12px;background:#2563eb;padding:5px 8px;border-radius:999px;vertical-align:middle">V5.2</span></h1><div><b>ZEREK Education</b> • Қазақша ЖИ-көмекші</div></div></div><div><b>Жоба авторы: ҚОҚАЙ ЖІГЕР • 📞 <a href="tel:+77051094331" class="author-phone">+7 705 109 4331</a></b></div><div style="display:flex;gap:8px;align-items:center"><select id="langSelect" style="width:auto;margin:0"><option value="kk">Қазақша</option><option value="ru">Русский</option><option value="en">English</option></select><button id="installPwaBtn" class="blue" style="display:none">📲 Орнату</button><button id="logoutBtn" class="gray" style="display:none">Шығу</button></div></header>
 <div class="wrap">
 <div class="card" style="padding:14px 18px"><div class="grid"><div><label>🤖 AI провайдері</label><select id="aiProvider"><option value="auto">Автоматты</option><option value="gemini">Google Gemini</option><option value="openai">OpenAI (ChatGPT модельдері)</option></select></div><div><label>AI күйі</label><div id="aiStatus" class="notice">Тексерілуде...</div></div></div></div><div class="card"><h2>👤 Менің AI лимитім</h2><div class="grid"><div><label>AI таңдау</label><select id="myAiProvider"><option value="auto">Автоматты</option><option value="openai">OpenAI</option><option value="gemini">Gemini</option></select></div><div id="myAiUsage" class="notice">Жүктелуде...</div></div><button class="blue" id="saveMyAi">Сақтау</button></div><div id="lessonBar" class="lessonbar"><b>📚 Ағымдағы сабақ:</b> әлі басталмаған.</div>
-<div class="tabs" id="tabs"><div class="ustaz-side-brand"><img src="/zerek-logo.png" alt="Ұстаз AI"><div><strong>Ұстаз AI</strong><span>Қазақша ЖИ-көмекші</span><div class="side-author">ҚОҚАЙ ЖІГЕР<br><a href="tel:+77051094331">📞 +7 705 109 4331</a></div></div></div><button data-p="dashboard" class="on">🏠 Басты панель</button><button data-p="subjects">📚 Пәндер</button><button data-p="kmjcenter">📘 ҚМЖ орталығы</button><button data-p="taskbank">🧩 Тапсырмалар банкі</button><button data-p="community">🌐 Ортақ база</button><button data-p="myclasses">👥 Менің сыныптарым</button><button data-p="kmj">📘 ҚМЖ</button><button data-p="kmjbuilder">📝 ҚМЖ құрастыру</button><button data-p="reflection">🔄 Рефлексия</button><button data-p="archive">📚 Менің архивім</button><button data-p="myresources">📎 Менің ресурстарым</button><button data-p="slides">📊 ҚМЖ → Слайд</button><button data-p="tasks">📝 HTML тапсырма</button><button data-p="images">🖼 ҚМЖ суреттері</button><button data-p="grouping">🎲 Топқа бөлу</button><button data-p="groups">👥 Топтық жұмыс</button><button data-p="screen">🖥 Экран режимі</button><button data-p="resources">🔗 Сыртқы ресурстар</button><button data-p="class">👥 Сынып</button><button data-p="qr">📱 QR қатысу</button><button data-p="monitor">📹 Сабақ мониторингі</button><button data-p="oral">🎙️ Ауызша жауап</button><button data-p="analysis">🤖 Жеке талдау</button><button data-p="journal">📊 Журнал</button><button data-p="packages">💳 Менің пакетім</button><button data-p="admin" id="adminTab" style="display:none">🔐 Рұқсаттар</button></div>
+<div class="tabs" id="tabs"><div class="ustaz-side-brand"><img src="/zerek-logo.png" alt="Ұстаз AI"><div><strong>Ұстаз AI</strong><span>Қазақша ЖИ-көмекші</span><div class="side-author">ҚОҚАЙ ЖІГЕР<br><a href="tel:+77051094331">📞 +7 705 109 4331</a></div></div></div><button data-p="dashboard" class="on">🏠 Басты панель</button><button data-p="schedule">📅 Сабақ кестесі</button><button data-p="primary">👧 Бастауыш мектеп</button><button data-p="subjects">📚 Пәндер</button><button data-p="kmjcenter">📘 ҚМЖ орталығы</button><button data-p="taskbank">🧩 Тапсырмалар банкі</button><button data-p="community">🌐 Ортақ база</button><button data-p="myclasses">👥 Менің сыныптарым</button><button data-p="kmj">📘 ҚМЖ</button><button data-p="kmjbuilder">📝 ҚМЖ құрастыру</button><button data-p="reflection">🔄 Рефлексия</button><button data-p="archive">📚 Менің архивім</button><button data-p="myresources">📎 Менің ресурстарым</button><button data-p="slides">📊 ҚМЖ → Слайд</button><button data-p="tasks">📝 HTML тапсырма</button><button data-p="images">🖼 ҚМЖ суреттері</button><button data-p="grouping">🎲 Топқа бөлу</button><button data-p="groups">👥 Топтық жұмыс</button><button data-p="screen">🖥 Экран режимі</button><button data-p="resources">🔗 Сыртқы ресурстар</button><button data-p="class">👥 Сынып</button><button data-p="qr">📱 QR қатысу</button><button data-p="monitor">📹 Сабақ мониторингі</button><button data-p="oral">🎙️ Ауызша жауап</button><button data-p="analysis">🤖 Жеке талдау</button><button data-p="journal">📊 Журнал</button><button data-p="packages">💳 Менің пакетім</button><button data-p="admin" id="adminTab" style="display:none">🔐 Рұқсаттар</button></div>
 
 
 <section id="dashboard" class="panel on">
@@ -143,6 +143,36 @@ html.zerek-student-public body .student-public-allowed{visibility:visible}
 </div>
 </section>
 
+
+<section id="schedule" class="panel"><div class="card"><h2>📅 Менің сабақ кестем</h2><p class="muted">1–4 және 5–11 сыныптарға ортақ. Кестеден бірден ҚМЖ ашуға болады.</p>
+<div class="grid3"><select id="schLevel"><option value="primary">👧 1–4 сынып</option><option value="secondary">🎓 5–11 сынып</option></select><input id="schClass" placeholder="Сынып: 1А / 7А"><input id="schSubject" placeholder="Пән"></div>
+<div class="grid3"><select id="schDay"><option value="1">Дүйсенбі</option><option value="2">Сейсенбі</option><option value="3">Сәрсенбі</option><option value="4">Бейсенбі</option><option value="5">Жұма</option></select><input id="schNo" type="number" min="1" value="1" placeholder="Сабақ №"><input id="schTime" placeholder="08:30-09:15"></div>
+<button class="green" id="schAdd">➕ Кестеге қосу</button> <button class="blue" id="schRefresh">🔄 Жаңарту</button>
+<div id="todayLessons" class="notice" style="margin-top:12px"></div><div id="scheduleGrid" style="overflow:auto;margin-top:12px"></div></div>
+<div class="card" id="scheduleImportCard"><h2>📥 Сабақ кестесін импорттау</h2>
+<p class="muted">Excel/CSV/PDF/DOCX файлын таңдаңыз. Алдымен мәтін оқылады, содан кейін мұғалім тексеріп, қолмен түзете алады.</p>
+<input id="scheduleImportFile" type="file" accept=".xlsx,.xls,.csv,.pdf,.docx,.txt">
+<button class="blue" id="readScheduleImport">📄 Файлды оқу</button>
+<textarea id="scheduleImportText" rows="7" placeholder="Импортталған кесте мәтіні осында шығады. Сақтамас бұрын тексеріңіз."></textarea>
+<div class="notice">⚠️ Импорт бірден базаға жазылмайды. Алдымен тексеріп, қажет болса кестені қолмен толықтырыңыз.</div>
+</div>
+<div class="card"><h2>✨ Бүгінгі сабақтарым</h2>
+<button class="green" id="prepareTodayKmj">✨ Бүгінгі ҚМЖ-ларды дайындау</button>
+<div id="todayActionList"></div></div>
+</section>
+<section id="primary" class="panel"><div class="card"><h2>👧 Бастауыш мектеп — 1–4 сынып</h2><p class="muted">Жас ерекшелігіне сай ҚМЖ, ойын, көрнекілік, сергіту, жұмыс парағы және интерактивті тапсырмалар.</p>
+<div class="grid3"><select id="prGrade"><option>1</option><option>2</option><option>3</option><option>4</option></select><select id="prSubject"><option>Әліппе</option><option>Ана тілі</option><option>Қазақ тілі</option><option>Әдебиеттік оқу</option><option>Математика</option><option>Жаратылыстану</option><option>Дүниетану</option><option>Цифрлық сауаттылық</option><option>Көркем еңбек</option><option>Музыка</option><option>Дене шынықтыру</option></select><select id="prStyle"><option value="game">🎮 Ойын</option><option value="national">🌸 Ұлттық</option><option value="story">📖 Ертегі/оқиға</option><option value="bloom">🌱 Блум</option><option value="research">🔍 Зерттеу</option><option value="creative">🎨 Шығармашылық</option><option value="integrated">🔗 Кіріктірілген</option><option value="digital">🤖 Цифрлық</option><option value="mixed">🔀 Аралас</option></select></div>
+<input id="prTopic" placeholder="Сабақ тақырыбы"><textarea id="prObjective" rows="2" placeholder="Оқу мақсаты"></textarea>
+<div class="primary-actions"><button class="green" id="prKmj">📘 Бастауыш ҚМЖ жасау</button><button class="blue" id="prVisual">🖼 Көрнекілік/жұмыс парағы</button><button class="gray" onclick="openZerek('schedule')">📅 Кестем</button></div>
+<div class="notice" style="margin-top:12px">1–2 сынып: қысқа нұсқау, ойын, сурет, қимыл және ауызша әрекет басым. 3–4 сынып: мәтіндік, зерттеу және функционалдық тапсырмалар біртіндеп күрделенеді.</div></div>
+<div class="card" id="primaryToolkit">
+<h2>🖼 Бастауыш көрнекілік және жұмыс парағы</h2>
+<div class="grid3"><div><label>Материал түрі</label><select id="ptType"><option>Суретті карточка</option><option>Сәйкестендіру</option><option>Бос орынды толтыру</option><option>Ретін тап</option><option>Дұрыс/бұрыс</option><option>Жұмыс парағы</option><option>Сергіту сәті</option></select></div><div><label>Тапсырма саны</label><input id="ptCount" type="number" value="5" min="1" max="20"></div><div><label>Деңгей</label><select id="ptLevel"><option>Жеңіл</option><option>Орташа</option><option>Аралас</option></select></div></div>
+<label>Тақырып / нұсқау</label><textarea id="ptPrompt" rows="2" placeholder="Мысалы: 1-сынып, 10 көлеміндегі қосу"></textarea>
+<button class="green" id="ptToTasks">🧩 HTML тапсырмаға жіберу</button>
+<div id="ptStatus" class="notice">Бастауыш тапсырма параметрлерін таңдаңыз.</div>
+</div>
+</section>
 <section id="subjects" class="panel">
  <div class="card"><h2>📚 Пәндер</h2><p class="muted">Пәнді таңдағанда ҚМЖ мен тапсырмалар сол пәннің ерекшелігіне бейімделеді.</p>
  <div id="subjectGrid" class="subject-grid"></div></div>
@@ -1030,6 +1060,48 @@ async function smartYear(){
 }
 if($("sjQuarterBtn"))$("sjQuarterBtn").onclick=smartQuarter;
 if($("sjYearBtn"))$("sjYearBtn").onclick=smartYear;
+
+let scheduleItems=[];const DAYN={1:"Дүйсенбі",2:"Сейсенбі",3:"Сәрсенбі",4:"Бейсенбі",5:"Жұма"};
+async function loadSchedule(){let r=await fetch('/api/schedule'),d=await r.json();if(!r.ok)return;scheduleItems=d.items||[];renderSchedule()}
+function renderSchedule(){let days=[1,2,3,4,5],max=Math.max(1,...scheduleItems.map(x=>Number(x.lesson_no)||1));let rows='';for(let n=1;n<=max;n++){rows+=`<tr><th>${n}</th>`+days.map(day=>{let a=scheduleItems.filter(x=>x.weekday==day&&x.lesson_no==n);return `<td>${a.map(x=>`<div class="schedule-cell"><b>${esc(x.class_name)} · ${esc(x.subject)}</b><small>${esc(x.start_time||'')}</small><button onclick="scheduleToKmj(${x.id})">📘 ҚМЖ</button><button class="red" onclick="deleteSchedule(${x.id})">×</button></div>`).join('')}</td>`}).join('')+'</tr>'}if($('scheduleGrid'))$('scheduleGrid').innerHTML=`<table class="kmj-table"><thead><tr><th>№</th>${days.map(d=>`<th>${DAYN[d]}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;let jsday=new Date().getDay(),today=scheduleItems.filter(x=>x.weekday==jsday);if($('todayLessons'))$('todayLessons').innerHTML=today.length?`<b>📅 Бүгінгі сабақтар:</b> `+today.map(x=>`${x.lesson_no}. ${esc(x.class_name)} — ${esc(x.subject)}`).join(' · '):'Бүгін кестеде сабақ жоқ.'}
+if($('schAdd'))$('schAdd').onclick=async()=>{let tm=$('schTime').value.split('-');let b={school_level:$('schLevel').value,class_name:$('schClass').value,subject:$('schSubject').value,weekday:Number($('schDay').value),lesson_no:Number($('schNo').value),start_time:tm[0]||'',end_time:tm[1]||''};let r=await fetch('/api/schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});if(r.ok)loadSchedule();else alert('Кесте сақталмады')};
+if($('schRefresh'))$('schRefresh').onclick=loadSchedule;window.deleteSchedule=async id=>{await fetch('/api/schedule/'+id,{method:'DELETE'});loadSchedule()};
+window.scheduleToKmj=id=>{let x=scheduleItems.find(a=>a.id==id);if(!x)return;openZerek('kmjbuilder');if($('bSubject'))$('bSubject').value=x.subject;if($('bClass'))$('bClass').value=x.class_name;if(x.school_level==='primary'&&$('bInstruction'))$('bInstruction').value='Бастауыш сынып жас ерекшелігіне бейімде: қысқа түсінікті нұсқау, ойын/көрнекілік, сергіту және жеңіл рефлексия қолдан.'};
+if($('prKmj'))$('prKmj').onclick=()=>{openZerek('kmjbuilder');let g=Number($('prGrade').value),s=$('prSubject').value,st=$('prStyle').value;if($('bSubject'))$('bSubject').value=s;if($('bClass'))$('bClass').value=g+' сынып';if($('bTopic'))$('bTopic').value=$('prTopic').value;if($('bObjective'))$('bObjective').value=$('prObjective').value;if($('bInstruction'))$('bInstruction').value=`БАСТАУЫШ РЕЖИМ. ${g}-сынып. Формат: ${st}. ${g<=2?'Мәтінді азайт, үлкен көрнекілік, ойын, қимыл, ауызша және суретті тапсырмалар басым болсын.':'Жасқа сай мәтіндік, зерттеу, функционалдық тапсырмалар мен көрнекілікті теңгер.'} Сергіту сәтін және бастауышқа жеңіл рефлексияны міндетті қос.`};
+if($('prVisual'))$('prVisual').onclick=()=>{openZerek('images');alert('ҚМЖ суреттері бөлімінде бастауышқа арналған көрнекілік немесе жұмыс парағын дайындаңыз.')};
+setTimeout(loadSchedule,600);
+
+async function readScheduleImport(){
+ let f=$("scheduleImportFile")?.files?.[0];if(!f)return alert("Файл таңдаңыз.");
+ let fd=new FormData();fd.append("file",f);$("scheduleImportText").value="Оқылып жатыр...";
+ try{let r=await fetch("/api/parse",{method:"POST",body:fd}),d=await r.json();if(!r.ok)throw Error(d.detail||"Файл оқылмады");$("scheduleImportText").value=(d.text||"").slice(0,30000)}
+ catch(e){$("scheduleImportText").value="Қате: "+e.message}
+}
+if($("readScheduleImport"))$("readScheduleImport").onclick=readScheduleImport;
+
+function scheduleActionCard(x){
+ return `<div class="card"><b>${esc(x.time||"")} • ${esc(x.class_name||"")} • ${esc(x.subject||"")}</b><br>
+ <button class="blue" onclick="scheduleToKmj('${encodeURIComponent(JSON.stringify(x))}')">📘 ҚМЖ</button>
+ <button class="green" onclick="scheduleStartLesson('${encodeURIComponent(JSON.stringify(x))}')">▶ Сабақты бастау</button>
+ <button class="gray" onclick="scheduleAttendance('${encodeURIComponent(JSON.stringify(x))}')">👥 Қатысу</button>
+ <button class="gray" onclick="scheduleJournal('${encodeURIComponent(JSON.stringify(x))}')">📊 Журнал</button></div>`;
+}
+window.scheduleToKmj=s=>{let x=JSON.parse(decodeURIComponent(s));if($("bClass"))$("bClass").value=x.class_name||"";if($("bSubject"))$("bSubject").value=x.subject||"";document.querySelector('#tabs button[data-p="kmjbuilder"]')?.click()};
+window.scheduleStartLesson=s=>{let x=JSON.parse(decodeURIComponent(s));scheduleToKmj(s);alert(`▶ ${x.class_name||""} ${x.subject||""} сабағы таңдалды. ҚМЖ/тапсырманы ашуға болады.`)};
+window.scheduleAttendance=s=>{let x=JSON.parse(decodeURIComponent(s));if($("sjClass"))$("sjClass").value=x.class_name||"";document.querySelector('#tabs button[data-p="journal"]')?.click()};
+window.scheduleJournal=s=>{let x=JSON.parse(decodeURIComponent(s));if($("sjClass"))$("sjClass").value=x.class_name||"";document.querySelector('#tabs button[data-p="journal"]')?.click()};
+
+async function refreshTodayActions(){
+ try{let r=await fetch("/api/schedule"),d=await r.json();if(!r.ok)return;let days=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"],day=days[new Date().getDay()];let items=(d.items||[]).filter(x=>(x.day||"").toLowerCase()===day);if($("todayActionList"))$("todayActionList").innerHTML=items.map(scheduleActionCard).join("")||"<div class='notice'>Бүгінгі сабақ табылмады.</div>";window.zerekTodaySchedule=items}catch(e){}
+}
+if($("prepareTodayKmj"))$("prepareTodayKmj").onclick=()=>{let a=window.zerekTodaySchedule||[];if(!a.length)return alert("Бүгінгі сабақ табылмады.");$("todayActionList").innerHTML=a.map(scheduleActionCard).join("")+"<div class='notice'>Қажетті сабақтың «ҚМЖ» батырмасын басыңыз. Әр ҚМЖ жеке AI сұраныс ретінде есептеледі.</div>"};
+
+if($("ptToTasks"))$("ptToTasks").onclick=()=>{
+ let cls=$("primaryGrade")?.value||"1",sub=$("primarySubject")?.value||"Математика",typ=$("ptType").value,c=$("ptCount").value,l=$("ptLevel").value,p=$("ptPrompt").value;
+ if($("taskPrompt"))$("taskPrompt").value=`${cls}-сынып, ${sub}. ${typ}. ${c} тапсырма. Деңгей: ${l}. ${p}. Бастауыш жасына сай қысқа, түсінікті және көрнекі тапсырмалар жаса.`;
+ document.querySelector('#tabs button[data-p="tasks"]')?.click();$("ptStatus").textContent="✅ Параметрлер HTML тапсырма бөліміне жіберілді.";
+};
+setTimeout(refreshTodayActions,500);
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
 async function checkAuth(){if(enterStudentPublicMode())return;try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadHtmlArchiveOptions();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}

@@ -133,6 +133,13 @@ def init_db():
               created_at TIMESTAMPTZ DEFAULT NOW(),
               UNIQUE(class_id,name)
             )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS teacher_schedule(
+              id BIGSERIAL PRIMARY KEY, user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+              school_level TEXT NOT NULL DEFAULT 'secondary', class_name TEXT NOT NULL, subject TEXT NOT NULL,
+              weekday INTEGER NOT NULL, lesson_no INTEGER NOT NULL, start_time TEXT DEFAULT '', end_time TEXT DEFAULT '',
+              room TEXT DEFAULT '', language TEXT DEFAULT 'kk', active BOOLEAN NOT NULL DEFAULT TRUE,
+              created_at TIMESTAMPTZ DEFAULT NOW(), UNIQUE(user_id,class_name,weekday,lesson_no)
+            )""")
             cur.execute("""CREATE TABLE IF NOT EXISTS journal_entries(
               id BIGSERIAL PRIMARY KEY,
               user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -817,6 +824,36 @@ def journal_year(class_name:str,school_year:str,request:Request):
         gs=[v for v in x["quarters"].values() if v is not None];x["suggested_year_grade"]=round(sum(gs)/len(gs)) if gs else None;x["attendance_pct"]=round(x["attendance_total"]/x["lessons_total"]*100,1) if x["lessons_total"] else 0;out.append(x)
     return {"items":out,"note":"Жылдық баға — мұғалімге ұсыныс. Ресми бағаны мұғалім бекітеді."}
 
+
+
+class ScheduleBody(BaseModel):
+    school_level:str="secondary"; class_name:str; subject:str; weekday:int; lesson_no:int; start_time:str=""; end_time:str=""; room:str=""; language:str="kk"
+
+@app.get("/api/schedule")
+def schedule_list(request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("SELECT * FROM teacher_schedule WHERE user_id=%s AND active=TRUE ORDER BY weekday,lesson_no,class_name",(u["id"],)); rows=cur.fetchall()
+    return {"items":rows}
+
+@app.post("/api/schedule")
+def schedule_save(body:ScheduleBody,request:Request):
+    u=auth_user(request); level=body.school_level if body.school_level in ('primary','secondary') else 'secondary'
+    with db() as c:
+        with c.cursor() as cur:
+            cur.execute("""INSERT INTO teacher_schedule(user_id,school_level,class_name,subject,weekday,lesson_no,start_time,end_time,room,language)
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(user_id,class_name,weekday,lesson_no) DO UPDATE SET
+            school_level=EXCLUDED.school_level,subject=EXCLUDED.subject,start_time=EXCLUDED.start_time,end_time=EXCLUDED.end_time,room=EXCLUDED.room,language=EXCLUDED.language,active=TRUE RETURNING id""",
+            (u['id'],level,body.class_name,body.subject,max(1,min(5,body.weekday)),max(1,body.lesson_no),body.start_time,body.end_time,body.room,body.language)); rid=cur.fetchone()['id']
+    return {"ok":True,"id":rid}
+
+@app.delete("/api/schedule/{item_id}")
+def schedule_delete(item_id:int,request:Request):
+    u=auth_user(request)
+    with db() as c:
+        with c.cursor() as cur: cur.execute("DELETE FROM teacher_schedule WHERE id=%s AND user_id=%s",(item_id,u['id']))
+    return {"ok":True}
 
 # ---------------- File parsing ----------------
 def parse_file(name: str, data: bytes) -> str:
