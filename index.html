@@ -90,6 +90,25 @@ body.student-public-mode .panel.on{display:block!important;width:min(1100px,100%
 .schedule-cell{border:1px solid #dbeafe;border-radius:10px;padding:7px;margin:4px;background:#f8fbff}.schedule-cell small{display:block;color:#64748b}.schedule-cell button{padding:5px 8px;margin:4px 3px 0 0}.primary-actions{display:flex;gap:8px;flex-wrap:wrap}
 .subject-chip-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
 .subject-chip{padding:10px 12px;border:1px solid #dbe3ef;border-radius:12px;background:#f8fafc;font-weight:600}
+
+.zsub-shell{padding:22px}
+.zsub-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.zsub-head h2{margin:0;font-size:30px}.zsub-head p{margin:6px 0 0;color:#64748b}
+.zsub-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0 18px}
+.zsub-filter{border:1px solid #d8e2f0;background:#fff;border-radius:10px;padding:9px 12px;cursor:pointer;font-weight:700}
+.zsub-filter.active{background:#2563eb;color:#fff;border-color:#2563eb}
+#zsubSearch{margin-left:auto;min-width:220px;max-width:300px}
+.zsub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.zsub-card{position:relative;text-align:left;min-height:178px;padding:20px;border:1px solid #dbe5f2;border-radius:18px;background:#fff;cursor:pointer;transition:.18s;box-shadow:0 2px 8px rgba(15,23,42,.03)}
+.zsub-card:hover{transform:translateY(-2px);border-color:#93c5fd;box-shadow:0 10px 24px rgba(37,99,235,.10)}
+.zsub-icon{font-size:34px;font-weight:900;min-height:44px}.zsub-name{font-size:20px;font-weight:900;color:#0f172a;margin:8px 0}
+.zsub-meta{color:#64748b;line-height:1.35}.zsub-arrow{position:absolute;right:15px;bottom:14px;width:34px;height:34px;border-radius:50%;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-size:22px}
+.zsub-other{border-style:dashed;text-align:center}.zsub-other .zsub-arrow{display:none}
+.zsub-help{margin-top:18px;padding:15px;border:1px solid #bfdbfe;border-radius:14px;background:#eff6ff;color:#1e3a8a}
+.zsub-help>div{display:flex;gap:22px;flex-wrap:wrap;margin-top:8px}
+#secondarySubjectCatalog{display:none!important}
+@media(max-width:700px){.zsub-head{display:block}.zsub-head button{margin-top:12px}.zsub-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#zsubSearch{margin-left:0;width:100%;max-width:none}.zsub-card{min-height:155px;padding:14px}.zsub-name{font-size:17px}}
+
 </style><script>
 window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};
 </script>
@@ -176,11 +195,58 @@ html.zerek-student-public body .student-public-allowed{visibility:visible}
 <div id="ptStatus" class="notice">Бастауыш тапсырма параметрлерін таңдаңыз.</div>
 </div>
 </section>
-<section id="subjects" class="panel"><div class="card" id="secondarySubjectCatalog">
-<h2>📚 5–11 сынып пәндері</h2>
-<p class="muted">ҚМЖ, сабақ кестесі және тапсырма құрастыруда қолданылатын пәндер.</p>
-<div class="subject-chip-grid"><span class="subject-chip">1. Қазақ тілі</span><span class="subject-chip">2. Қазақ әдебиеті</span><span class="subject-chip">3. Орыс тілі мен әдебиеті</span><span class="subject-chip">4. Алгебра</span><span class="subject-chip">5. Математика</span><span class="subject-chip">6. Геометрия</span><span class="subject-chip">7. Қазақстан тарихы</span><span class="subject-chip">8. География</span><span class="subject-chip">9. Биология</span><span class="subject-chip">10. Химия</span><span class="subject-chip">11. Физика</span><span class="subject-chip">12. Информатика және жасанды интеллект</span><span class="subject-chip">13. Шетел тілі</span><span class="subject-chip">14. Көркем еңбек</span><span class="subject-chip">15. Дене шынықтыру</span><span class="subject-chip">16. Сынып сағаты</span></div>
+<section id="subjects" class="panel">
+<div class="card zsub-shell" id="secondarySubjectCards">
+<div class="zsub-head"><div><h2>📚 5–11 сынып пәндері</h2><p>Пәнді таңдаңыз — ҚМЖ құрастыру бөлімі сол пәнмен бірден ашылады.</p></div>
+<button class="green" type="button" onclick="openSubjectKmp('')">＋ Жаңа ҚМЖ</button></div>
+<div class="zsub-tools">
+<button class="zsub-filter active" data-cat="all">Барлық пәндер</button>
+<button class="zsub-filter" data-cat="Тілдер">Тілдер</button>
+<button class="zsub-filter" data-cat="Математика">Математика</button>
+<button class="zsub-filter" data-cat="Жаратылыстану">Жаратылыстану</button>
+<button class="zsub-filter" data-cat="Қоғамдық-гуманитарлық">Қоғамдық-гуманитарлық</button>
+<button class="zsub-filter" data-cat="Шығармашылық">Шығармашылық</button>
+<button class="zsub-filter" data-cat="Дене және өмір қауіпсіздігі">Дене және өмір қауіпсіздігі</button>
+<input id="zsubSearch" placeholder="🔎 Пәнді іздеу...">
 </div>
+<div class="zsub-grid"><button type="button" class="zsub-card" data-subject="Қазақ тілі" data-cat="Тілдер" onclick="openSubjectKmp('Қазақ тілі')">
+<div class="zsub-icon">📖</div><div class="zsub-name">Қазақ тілі</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Қазақ әдебиеті" data-cat="Тілдер" onclick="openSubjectKmp('Қазақ әдебиеті')">
+<div class="zsub-icon">🪶</div><div class="zsub-name">Қазақ әдебиеті</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Орыс тілі мен әдебиеті" data-cat="Тілдер" onclick="openSubjectKmp('Орыс тілі мен әдебиеті')">
+<div class="zsub-icon">RU</div><div class="zsub-name">Орыс тілі мен әдебиеті</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Алгебра" data-cat="Математика" onclick="openSubjectKmp('Алгебра')">
+<div class="zsub-icon">📐</div><div class="zsub-name">Алгебра</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Математика" data-cat="Математика" onclick="openSubjectKmp('Математика')">
+<div class="zsub-icon">➗</div><div class="zsub-name">Математика</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Геометрия" data-cat="Математика" onclick="openSubjectKmp('Геометрия')">
+<div class="zsub-icon">📏</div><div class="zsub-name">Геометрия</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Қазақстан тарихы" data-cat="Қоғамдық-гуманитарлық" onclick="openSubjectKmp('Қазақстан тарихы')">
+<div class="zsub-icon">🏛️</div><div class="zsub-name">Қазақстан тарихы</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="География" data-cat="Қоғамдық-гуманитарлық" onclick="openSubjectKmp('География')">
+<div class="zsub-icon">🌍</div><div class="zsub-name">География</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Биология" data-cat="Жаратылыстану" onclick="openSubjectKmp('Биология')">
+<div class="zsub-icon">🧬</div><div class="zsub-name">Биология</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Химия" data-cat="Жаратылыстану" onclick="openSubjectKmp('Химия')">
+<div class="zsub-icon">🧪</div><div class="zsub-name">Химия</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Физика" data-cat="Жаратылыстану" onclick="openSubjectKmp('Физика')">
+<div class="zsub-icon">⚛️</div><div class="zsub-name">Физика</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Информатика және жасанды интеллект" data-cat="Жаратылыстану" onclick="openSubjectKmp('Информатика және жасанды интеллект')">
+<div class="zsub-icon">💻</div><div class="zsub-name">Информатика және жасанды интеллект</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Шетел тілі" data-cat="Тілдер" onclick="openSubjectKmp('Шетел тілі')">
+<div class="zsub-icon">ENG</div><div class="zsub-name">Шетел тілі</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Көркем еңбек" data-cat="Шығармашылық" onclick="openSubjectKmp('Көркем еңбек')">
+<div class="zsub-icon">🎨</div><div class="zsub-name">Көркем еңбек</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Дене шынықтыру" data-cat="Дене және өмір қауіпсіздігі" onclick="openSubjectKmp('Дене шынықтыру')">
+<div class="zsub-icon">🏃</div><div class="zsub-name">Дене шынықтыру</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button><button type="button" class="zsub-card" data-subject="Сынып сағаты" data-cat="Қоғамдық-гуманитарлық" onclick="openSubjectKmp('Сынып сағаты')">
+<div class="zsub-icon">👥</div><div class="zsub-name">Сынып сағаты</div>
+<div class="zsub-meta">ҚМЖ • тапсырмалар • ортақ база</div><span class="zsub-arrow">→</span></button>
+<button type="button" class="zsub-card zsub-other" onclick="openSubjectKmp('Басқа пән')"><div class="zsub-icon">＋</div><div class="zsub-name">Басқа пән</div><div class="zsub-meta">Тізімде жоқ пән</div><span class="zsub-arrow">→</span></button>
+</div>
+<div class="zsub-help"><b>ℹ️ Қалай жұмыс істейді?</b><div><span>1️⃣ Пәнді таңдаңыз</span><span>2️⃣ ҚМЖ құрастырыңыз</span><span>3️⃣ Архивке сақтаңыз</span><span>4️⃣ HTML тапсырма/жұмыс парағын жасаңыз</span></div></div>
+</div>
+
  <div class="card"><h2>📚 Пәндер</h2><p class="muted">Пәнді таңдағанда ҚМЖ мен тапсырмалар сол пәннің ерекшелігіне бейімделеді.</p>
  <div id="subjectGrid" class="subject-grid"></div></div>
 </section>
@@ -1124,6 +1190,23 @@ function refreshZerekSubjectLists(){
  });
 }
 setTimeout(refreshZerekSubjectLists,200);
+
+window.openSubjectKmp=function(subject){
+ const candidates=["bSubject","subject","kmjSubject"];
+ for(const id of candidates){const el=document.getElementById(id);if(el){if(subject && el.tagName==="SELECT" && ![...el.options].some(o=>o.value===subject)){let o=document.createElement("option");o.value=o.textContent=subject;el.appendChild(o)}if(subject)el.value=subject;}}
+ const btn=document.querySelector('#tabs button[data-p="kmjbuilder"], [data-p="kmjbuilder"], [data-panel="kmjbuilder"]');
+ if(btn)btn.click(); else {const sec=document.getElementById("kmjbuilder");if(sec)sec.scrollIntoView({behavior:"smooth"});}
+};
+function zsubApply(){
+ const q=(document.getElementById("zsubSearch")?.value||"").toLowerCase();
+ const active=document.querySelector(".zsub-filter.active")?.dataset.cat||"all";
+ document.querySelectorAll(".zsub-card[data-subject]").forEach(c=>{
+   const okCat=active==="all"||c.dataset.cat===active, okQ=!q||c.dataset.subject.toLowerCase().includes(q);
+   c.style.display=okCat&&okQ?"":"none";
+ });
+}
+document.querySelectorAll(".zsub-filter").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".zsub-filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");zsubApply()}));
+document.getElementById("zsubSearch")?.addEventListener("input",zsubApply);
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
 async function checkAuth(){if(enterStudentPublicMode())return;try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadHtmlArchiveOptions();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}
