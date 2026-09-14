@@ -1268,6 +1268,95 @@ function renderZerekSubjectCards(lang=zerekLang()){
  zsubApply();
 }
 setTimeout(()=>{renderZerekSubjectCards();document.querySelectorAll('select[id*="lang" i],select[id*="language" i]').forEach(el=>el.addEventListener("change",()=>renderZerekSubjectCards(zerekLang())))},350);
+
+const ZEREK_FULL_I18N={
+ kk:{
+  brandSub:"Қазақша ЖИ-көмекші",newChat:"＋ Жаңа әңгіме",home:"🏠 Басты панель",schedule:"📅 Сабақ кестесі",
+  primary:"👧 Бастауыш мектеп",subjects:"📚 Пәндер",kmjCenter:"📘 ҚМЖ орталығы",tasksBank:"🧩 Тапсырмалар банкі",
+  shared:"🌐 Ортақ база",classes:"👥 Менің сыныптарым",hello:"Сәлеметсіз бе! Мен — Ұстаз AI",
+  heroSub:"Қазақ тілінде сабақ жоспарын, тапсырма, тест пен дескриптор дайындауға көмектесемін.",
+  current:"📚 Ағымдағы сабақ:",goal:"🎯",lessonGoal:"🎯 Сабақ мақсатын жазу",levelTask:"🧩 Деңгейлік тапсырма",
+  fixTest:"📝 Бекіту тесті",criteria:"👥 Бағалау критерийі",logout:"Шығу",payment:"📲 Оңалту"
+ },
+ ru:{
+  brandSub:"ИИ-помощник учителя",newChat:"＋ Новый диалог",home:"🏠 Главная панель",schedule:"📅 Расписание",
+  primary:"👧 Начальная школа",subjects:"📚 Предметы",kmjCenter:"📘 Центр КСП",tasksBank:"🧩 Банк заданий",
+  shared:"🌐 Общая база",classes:"👥 Мои классы",hello:"Здравствуйте! Я — Ұстаз AI",
+  heroSub:"Помогаю создавать планы уроков, задания, тесты и дескрипторы.",
+  current:"📚 Текущий урок:",goal:"🎯",lessonGoal:"🎯 Сформулировать цель урока",levelTask:"🧩 Уровневые задания",
+  fixTest:"📝 Закрепляющий тест",criteria:"👥 Критерии оценивания",logout:"Выйти",payment:"📲 Оплата"
+ },
+ en:{
+  brandSub:"AI assistant for teachers",newChat:"＋ New chat",home:"🏠 Dashboard",schedule:"📅 Schedule",
+  primary:"👧 Primary school",subjects:"📚 Subjects",kmjCenter:"📘 Lesson plan center",tasksBank:"🧩 Task bank",
+  shared:"🌐 Shared bank",classes:"👥 My classes",hello:"Hello! I’m Ұстаз AI",
+  heroSub:"I help create lesson plans, tasks, tests and assessment descriptors.",
+  current:"📚 Current lesson:",goal:"🎯",lessonGoal:"🎯 Write lesson objective",levelTask:"🧩 Differentiated tasks",
+  fixTest:"📝 Review test",criteria:"👥 Assessment criteria",logout:"Log out",payment:"📲 Payment"
+ }
+};
+function zLangNorm(v){
+ v=(v||"").toLowerCase();
+ if(v.startsWith("ru")||v.includes("рус")) return "ru";
+ if(v.startsWith("en")||v.includes("eng")) return "en";
+ return "kk";
+}
+function setTextByExact(root, from, to){
+ const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+ let n; while(n=walker.nextNode()){if(n.parentElement && !["SCRIPT","STYLE","TEXTAREA","OPTION"].includes(n.parentElement.tagName) && n.nodeValue.trim()===from)n.nodeValue=n.nodeValue.replace(from,to)}
+}
+const ZEREK_EXACT_MAP={
+ "Қазақша ЖИ-көмекші":"brandSub","＋ Жаңа әңгіме":"newChat","+ Жаңа әңгіме":"newChat",
+ "🏠 Басты панель":"home","📅 Сабақ кестесі":"schedule","👧 Бастауыш мектеп":"primary","📚 Пәндер":"subjects",
+ "📘 ҚМЖ орталығы":"kmjCenter","🧩 Тапсырмалар банкі":"tasksBank","🌐 Ортақ база":"shared","👥 Менің сыныптарым":"classes",
+ "Сәлеметсіз бе! Мен — Ұстаз AI":"hello",
+ "Қазақ тілінде сабақ жоспарын, тапсырма, тест пен дескриптор дайындауға көмектесемін.":"heroSub",
+ "🎯 Сабақ мақсатын жазу":"lessonGoal","🧩 Деңгейлік тапсырма":"levelTask","📝 Бекіту тесті":"fixTest","👥 Бағалау критерийі":"criteria",
+ "Шығу":"logout","📲 Оңалту":"payment"
+};
+function applyZerekFullLanguage(lang){
+ lang=zLangNorm(lang); localStorage.setItem("zerek_lang",lang); const t=ZEREK_FULL_I18N[lang];
+ // Translate exact visible static labels from any of the 3 languages back through key lookup.
+ const reverse={};
+ for(const L of Object.values(ZEREK_FULL_I18N))for(const [k,v] of Object.entries(L))reverse[v]=k;
+ const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;
+ while(n=walker.nextNode()){
+   if(!n.parentElement||["SCRIPT","STYLE","TEXTAREA","OPTION"].includes(n.parentElement.tagName))continue;
+   const raw=n.nodeValue.trim(), key=reverse[raw]||ZEREK_EXACT_MAP[raw];
+   if(key&&t[key])n.nodeValue=n.nodeValue.replace(raw,t[key]);
+ }
+ // Current lesson banner: translate its label while preserving lesson data.
+ document.querySelectorAll("*").forEach(el=>{
+   if(el.children.length===0){
+     let s=el.textContent.trim();
+     if(s.startsWith("📚 Ағымдағы сабақ:")||s.startsWith("📚 Текущий урок:")||s.startsWith("📚 Current lesson:")){
+       el.textContent=t.current+s.substring(s.indexOf(":")+1);
+     }
+   }
+ });
+ // Buttons/inputs placeholders commonly used in the home shell.
+ document.querySelectorAll('input,textarea').forEach(el=>{
+   const ph=el.placeholder||"";
+   const pm={
+    "Сұрағыңызды жазыңыз...":{ru:"Введите ваш вопрос...",en:"Type your question...",kk:"Сұрағыңызды жазыңыз..."},
+    "Пәнді іздеу...":{ru:"Найти предмет...",en:"Search subjects...",kk:"Пәнді іздеу..."}
+   };
+   if(pm[ph])el.placeholder=pm[ph][lang];
+ });
+ if(typeof renderZerekSubjectCards==="function")renderZerekSubjectCards(lang);
+ document.documentElement.lang=lang==="kk"?"kk":lang;
+}
+function bindZerekLanguageSelects(){
+ document.querySelectorAll("select").forEach(el=>{
+   const vals=[...el.options].map(o=>(o.value+" "+o.textContent).toLowerCase()).join(" ");
+   if(vals.includes("рус")&&vals.includes("қазақ")){
+     if(el.dataset.zerekLangBound)return;el.dataset.zerekLangBound="1";
+     el.addEventListener("change",()=>applyZerekFullLanguage(el.value));
+     applyZerekFullLanguage(el.value);
+   }
+ });
+}
+setTimeout(bindZerekLanguageSelects,500);
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
 async function checkAuth(){if(enterStudentPublicMode())return;try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadHtmlArchiveOptions();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}
