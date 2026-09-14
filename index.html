@@ -87,7 +87,10 @@ body.student-public-mode .panel.on{display:block!important;width:min(1100px,100%
 @media(max-width:700px){.work-mode-head{display:block}.work-mode-head select{width:100%;margin-top:8px}}
 
 .format-mix-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:12px}.format-mix-grid label{background:#f8fafc;border:1px solid #dbe3ef;border-radius:12px;padding:10px}.kmj-format-card{border:1px solid #bfdbfe}
-.schedule-cell{border:1px solid #dbeafe;border-radius:10px;padding:7px;margin:4px;background:#f8fbff}.schedule-cell small{display:block;color:#64748b}.schedule-cell button{padding:5px 8px;margin:4px 3px 0 0}.primary-actions{display:flex;gap:8px;flex-wrap:wrap}</style><script>
+.schedule-cell{border:1px solid #dbeafe;border-radius:10px;padding:7px;margin:4px;background:#f8fbff}.schedule-cell small{display:block;color:#64748b}.schedule-cell button{padding:5px 8px;margin:4px 3px 0 0}.primary-actions{display:flex;gap:8px;flex-wrap:wrap}
+.subject-chip-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.subject-chip{padding:10px 12px;border:1px solid #dbe3ef;border-radius:12px;background:#f8fafc;font-weight:600}
+</style><script>
 window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]},svg:{fontCache:'global'}};
 </script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
@@ -173,7 +176,11 @@ html.zerek-student-public body .student-public-allowed{visibility:visible}
 <div id="ptStatus" class="notice">Бастауыш тапсырма параметрлерін таңдаңыз.</div>
 </div>
 </section>
-<section id="subjects" class="panel">
+<section id="subjects" class="panel"><div class="card" id="secondarySubjectCatalog">
+<h2>📚 5–11 сынып пәндері</h2>
+<p class="muted">ҚМЖ, сабақ кестесі және тапсырма құрастыруда қолданылатын пәндер.</p>
+<div class="subject-chip-grid"><span class="subject-chip">1. Қазақ тілі</span><span class="subject-chip">2. Қазақ әдебиеті</span><span class="subject-chip">3. Орыс тілі мен әдебиеті</span><span class="subject-chip">4. Алгебра</span><span class="subject-chip">5. Математика</span><span class="subject-chip">6. Геометрия</span><span class="subject-chip">7. Қазақстан тарихы</span><span class="subject-chip">8. География</span><span class="subject-chip">9. Биология</span><span class="subject-chip">10. Химия</span><span class="subject-chip">11. Физика</span><span class="subject-chip">12. Информатика және жасанды интеллект</span><span class="subject-chip">13. Шетел тілі</span><span class="subject-chip">14. Көркем еңбек</span><span class="subject-chip">15. Дене шынықтыру</span><span class="subject-chip">16. Сынып сағаты</span></div>
+</div>
  <div class="card"><h2>📚 Пәндер</h2><p class="muted">Пәнді таңдағанда ҚМЖ мен тапсырмалар сол пәннің ерекшелігіне бейімделеді.</p>
  <div id="subjectGrid" class="subject-grid"></div></div>
 </section>
@@ -1102,6 +1109,21 @@ if($("ptToTasks"))$("ptToTasks").onclick=()=>{
  document.querySelector('#tabs button[data-p="tasks"]')?.click();$("ptStatus").textContent="✅ Параметрлер HTML тапсырма бөліміне жіберілді.";
 };
 setTimeout(refreshTodayActions,500);
+const ZEREK_SECONDARY_SUBJECTS=["Қазақ тілі", "Қазақ әдебиеті", "Орыс тілі мен әдебиеті", "Алгебра", "Математика", "Геометрия", "Қазақстан тарихы", "География", "Биология", "Химия", "Физика", "Информатика және жасанды интеллект", "Шетел тілі", "Көркем еңбек", "Дене шынықтыру", "Сынып сағаты"];
+function fillZerekSubjectSelect(el, keep=true){
+ if(!el)return;
+ const old=keep?el.value:"";
+ const first=[...el.options].find(o=>!o.value)?.outerHTML||'<option value="">Пәнді таңдаңыз</option>';
+ el.innerHTML=first+ZEREK_SECONDARY_SUBJECTS.map(s=>`<option value="${s}">${s}</option>`).join("")+`<option value="Басқа пән">Басқа пән</option>`;
+ if(old && [...el.options].some(o=>o.value===old))el.value=old;
+}
+function refreshZerekSubjectLists(){
+ ["scheduleSubject","bSubject","subject","taskSubject"].forEach(id=>{
+   const el=document.getElementById(id);
+   if(el && el.tagName==="SELECT") fillZerekSubjectSelect(el);
+ });
+}
+setTimeout(refreshZerekSubjectLists,200);
 const I18N={kk:{auth:"AI Мұғалім көмекшісіне кіру",password:"Құпиясөз",login:"Кіру",register:"Тіркелу",name:"Аты-жөні",request:"Тіркелу сұранысын жіберу"},ru:{auth:"Вход в AI-помощник учителя",password:"Пароль",login:"Войти",register:"Регистрация",name:"ФИО",request:"Отправить заявку"},en:{auth:"Sign in to AI Teacher Assistant",password:"Password",login:"Sign in",register:"Register",name:"Full name",request:"Send registration request"}};
 function setLang(l){l=I18N[l]?l:"kk";localStorage.setItem("uiLang",l);document.documentElement.lang=l;document.querySelectorAll("[data-i18n]").forEach(e=>{let k=e.dataset.i18n;if(I18N[l][k])e.textContent=I18N[l][k]});if($("langSelect"))$("langSelect").value=l}
 async function checkAuth(){if(enterStudentPublicMode())return;try{let r=await fetch("/api/auth/me"),d=await r.json();if(d.authenticated){$("authOverlay").style.display="none";$("logoutBtn").style.display="inline-block";if(d.user.role==="admin")$("adminTab").style.display="inline-block";window.currentUser=d.user;loadMyAi();loadResources();loadArchive();loadHtmlArchiveOptions();loadPackages();if(d.user.role==='admin')loadAdminPayments()}else $("authOverlay").style.display="flex"}catch(e){$("authStatus").textContent=e.message}}
